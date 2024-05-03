@@ -61,6 +61,10 @@ void Node::_notification(int p_notification) {
 			GDVIRTUAL_CALL(_physics_process, get_physics_process_delta_time());
 		} break;
 
+		case NOTIFICATION_POST_PROCESS: {
+			GDVIRTUAL_CALL(_post_process, get_post_process_delta_time());
+		} break;
+
 		case NOTIFICATION_ENTER_TREE: {
 			ERR_FAIL_NULL(get_viewport());
 			ERR_FAIL_NULL(get_tree());
@@ -86,8 +90,10 @@ void Node::_notification(int p_notification) {
 
 					if (data.process_thread_group_owner) {
 						data.process_group = data.process_thread_group_owner->data.process_group;
+						data.post_process_group = data.process_thread_group_owner->data.post_process_group;
 					} else {
 						data.process_group = &data.tree->default_process_group;
+						data.post_process_group = &data.tree->default_post_process_group;
 					}
 				} else {
 					data.process_thread_group_owner = this;
@@ -209,6 +215,9 @@ void Node::_notification(int p_notification) {
 			if (GDVIRTUAL_IS_OVERRIDDEN(_physics_process)) {
 				set_physics_process(true);
 			}
+			if (GDVIRTUAL_IS_OVERRIDDEN(_post_process)) {
+				set_post_process(true);
+			}
 
 			GDVIRTUAL_CALL(_ready);
 		} break;
@@ -250,6 +259,10 @@ void Node::_notification(int p_notification) {
 			}
 		} break;
 	}
+}
+
+bool Node::implements_post_process() const {
+	return GDVIRTUAL_IS_OVERRIDDEN(_post_process);
 }
 
 void Node::_propagate_ready() {
@@ -956,6 +969,36 @@ void Node::set_process(bool p_process) {
 	}
 }
 
+double Node::get_post_process_delta_time() const {
+	if (data.tree) {
+		return data.tree->get_post_process_time();
+	} else {
+		return 0;
+	}
+}
+
+void Node::set_post_process(bool p_process) {
+	ERR_THREAD_GUARD
+	if (data.post_process == p_process) {
+		return;
+	}
+
+	if (!is_inside_tree()) {
+		data.post_process = p_process;
+		return;
+	}
+
+	if (_is_any_processing()) {
+		_remove_from_process_thread_group();
+	}
+
+	data.post_process = p_process;
+
+	if (_is_any_processing()) {
+		_add_to_process_thread_group();
+	}
+}
+
 bool Node::is_processing() const {
 	return data.process;
 }
@@ -976,6 +1019,32 @@ void Node::set_process_internal(bool p_process_internal) {
 	}
 
 	data.process_internal = p_process_internal;
+
+	if (_is_any_processing()) {
+		_add_to_process_thread_group();
+	}
+}
+
+bool Node::is_post_processing() const {
+	return data.post_process;
+}
+
+void Node::set_post_process_internal(bool p_process_internal) {
+	ERR_THREAD_GUARD
+	if (data.post_process_internal == p_process_internal) {
+		return;
+	}
+
+	if (!is_inside_tree()) {
+		data.post_process_internal = p_process_internal;
+		return;
+	}
+
+	if (_is_any_processing()) {
+		_remove_from_process_thread_group();
+	}
+
+	data.post_process_internal = p_process_internal;
 
 	if (_is_any_processing()) {
 		_add_to_process_thread_group();
@@ -1038,6 +1107,10 @@ void Node::_add_tree_to_process_thread_group(Node *p_owner) {
 }
 bool Node::is_processing_internal() const {
 	return data.process_internal;
+}
+
+bool Node::is_post_processing_internal() const {
+	return data.post_process_internal;
 }
 
 void Node::set_process_thread_group_order(int p_order) {
@@ -1110,6 +1183,32 @@ void Node::set_physics_process_priority(int p_priority) {
 
 int Node::get_physics_process_priority() const {
 	return data.physics_process_priority;
+}
+
+void Node::set_post_process_priority(int p_priority) {
+	ERR_THREAD_GUARD
+	if (data.post_process_priority == p_priority) {
+		return;
+	}
+	if (!is_inside_tree()) {
+		// Not yet in the tree; trivial update.
+		data.post_process_priority = p_priority;
+		return;
+	}
+
+	if (_is_any_processing()) {
+		_remove_from_process_thread_group();
+	}
+
+	data.post_process_priority = p_priority;
+
+	if (_is_any_processing()) {
+		_add_to_process_thread_group();
+	}
+}
+
+int Node::get_post_process_priority() const {
+	return data.post_process_priority;
 }
 
 void Node::set_process_thread_group(ProcessThreadGroup p_mode) {
@@ -3005,7 +3104,7 @@ static void find_owned_by(Node *p_by, Node *p_node, List<Node *> *p_owned) {
 	}
 }
 
-void Node::replace_by(Node *p_node, bool p_keep_groups) {
+void Node::replace_by(Node *p_node, bool p_keep_groups, bool p_keep_children) {
 	ERR_THREAD_GUARD
 	ERR_FAIL_NULL(p_node);
 	ERR_FAIL_COND(p_node->data.parent);
@@ -3026,10 +3125,11 @@ void Node::replace_by(Node *p_node, bool p_keep_groups) {
 	_replace_connections_target(p_node);
 
 	if (data.owner) {
-		for (int i = 0; i < get_child_count(); i++) {
-			find_owned_by(data.owner, get_child(i), &owned_by_owner);
+		if (p_keep_children) {
+			for (int i = 0; i < get_child_count(); i++) {
+				find_owned_by(data.owner, get_child(i), &owned_by_owner);
+			}
 		}
-
 		_clean_up_owner();
 	}
 
@@ -3043,32 +3143,33 @@ void Node::replace_by(Node *p_node, bool p_keep_groups) {
 	}
 
 	emit_signal(SNAME("replacing_by"), p_node);
+	if (p_keep_children) {
+		while (get_child_count()) {
+			Node *child = get_child(0);
+			remove_child(child);
+			if (!child->is_owned_by_parent()) {
+				// add the custom children to the p_node
+				Node *child_owner = child->get_owner() == this ? p_node : child->get_owner();
+				child->set_owner(nullptr);
+				p_node->add_child(child);
+				child->set_owner(child_owner);
+			}
+		}
 
-	while (get_child_count()) {
-		Node *child = get_child(0);
-		remove_child(child);
-		if (!child->is_owned_by_parent()) {
-			// add the custom children to the p_node
-			Node *child_owner = child->get_owner() == this ? p_node : child->get_owner();
-			child->set_owner(nullptr);
-			p_node->add_child(child);
-			child->set_owner(child_owner);
+		for (Node *E : owned) {
+			if (E->data.owner != p_node) {
+				E->set_owner(p_node);
+			}
+		}
+
+		for (Node *E : owned_by_owner) {
+			if (E->data.owner != owner) {
+				E->set_owner(owner);
+			}
 		}
 	}
 
 	p_node->set_owner(owner);
-	for (Node *E : owned) {
-		if (E->data.owner != p_node) {
-			E->set_owner(p_node);
-		}
-	}
-
-	for (Node *E : owned_by_owner) {
-		if (E->data.owner != owner) {
-			E->set_owner(owner);
-		}
-	}
-
 	p_node->set_scene_file_path(get_scene_file_path());
 }
 
@@ -3520,7 +3621,6 @@ void Node::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_and_resource", "path"), &Node::_get_node_and_resource);
 
 	ClassDB::bind_method(D_METHOD("is_inside_tree"), &Node::is_inside_tree);
-	ClassDB::bind_method(D_METHOD("is_part_of_edited_scene"), &Node::is_part_of_edited_scene);
 	ClassDB::bind_method(D_METHOD("is_ancestor_of", "node"), &Node::is_ancestor_of);
 	ClassDB::bind_method(D_METHOD("is_greater_than", "node"), &Node::is_greater_than);
 	ClassDB::bind_method(D_METHOD("get_path"), &Node::get_path);
@@ -3563,6 +3663,12 @@ void Node::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_process_mode"), &Node::get_process_mode);
 	ClassDB::bind_method(D_METHOD("can_process"), &Node::can_process);
 
+	ClassDB::bind_method(D_METHOD("get_post_process_delta_time"), &Node::get_post_process_delta_time);
+	ClassDB::bind_method(D_METHOD("set_post_process", "enable"), &Node::set_post_process);
+	ClassDB::bind_method(D_METHOD("set_post_process_priority", "priority"), &Node::set_post_process_priority);
+	ClassDB::bind_method(D_METHOD("get_post_process_priority"), &Node::get_post_process_priority);
+	ClassDB::bind_method(D_METHOD("is_post_processing"), &Node::is_post_processing);
+
 	ClassDB::bind_method(D_METHOD("set_process_thread_group", "mode"), &Node::set_process_thread_group);
 	ClassDB::bind_method(D_METHOD("get_process_thread_group"), &Node::get_process_thread_group);
 
@@ -3596,7 +3702,7 @@ void Node::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_tween"), &Node::create_tween);
 
 	ClassDB::bind_method(D_METHOD("duplicate", "flags"), &Node::duplicate, DEFVAL(DUPLICATE_USE_INSTANTIATION | DUPLICATE_SIGNALS | DUPLICATE_GROUPS | DUPLICATE_SCRIPTS));
-	ClassDB::bind_method(D_METHOD("replace_by", "node", "keep_groups"), &Node::replace_by, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("replace_by", "node", "keep_groups", "keep_children"), &Node::replace_by, DEFVAL(false), DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("set_scene_instance_load_placeholder", "load_placeholder"), &Node::set_scene_instance_load_placeholder);
 	ClassDB::bind_method(D_METHOD("get_scene_instance_load_placeholder"), &Node::get_scene_instance_load_placeholder);
@@ -3730,6 +3836,7 @@ void Node::_bind_methods() {
 
 	BIND_BITFIELD_FLAG(FLAG_PROCESS_THREAD_MESSAGES);
 	BIND_BITFIELD_FLAG(FLAG_PROCESS_THREAD_MESSAGES_PHYSICS);
+	BIND_BITFIELD_FLAG(FLAG_POST_PROCESS_THREAD_MESSAGES);
 	BIND_BITFIELD_FLAG(FLAG_PROCESS_THREAD_MESSAGES_ALL);
 
 	BIND_ENUM_CONSTANT(PHYSICS_INTERPOLATION_MODE_INHERIT);
@@ -3778,7 +3885,7 @@ void Node::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "process_thread_messages", PROPERTY_HINT_FLAGS, "Process,Physics Process"), "set_process_thread_messages", "get_process_thread_messages");
 
 	ADD_GROUP("Physics Interpolation", "physics_interpolation_");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "physics_interpolation_mode", PROPERTY_HINT_ENUM, "Inherit,On,Off"), "set_physics_interpolation_mode", "get_physics_interpolation_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "physics_interpolation_mode", PROPERTY_HINT_ENUM, "Inherit,Off,On"), "set_physics_interpolation_mode", "get_physics_interpolation_mode");
 
 	ADD_GROUP("Auto Translate", "auto_translate_");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "auto_translate_mode", PROPERTY_HINT_ENUM, "Inherit,Always,Disabled"), "set_auto_translate_mode", "get_auto_translate_mode");
@@ -3788,6 +3895,7 @@ void Node::_bind_methods() {
 
 	GDVIRTUAL_BIND(_process, "delta");
 	GDVIRTUAL_BIND(_physics_process, "delta");
+	GDVIRTUAL_BIND(_post_process, "delta");
 	GDVIRTUAL_BIND(_enter_tree);
 	GDVIRTUAL_BIND(_exit_tree);
 	GDVIRTUAL_BIND(_ready);
@@ -3822,9 +3930,11 @@ Node::Node() {
 
 	data.physics_process = false;
 	data.process = false;
+	data.post_process = false;
 
 	data.physics_process_internal = false;
 	data.process_internal = false;
+	data.post_process_internal = false;
 
 	data.input = false;
 	data.shortcut_input = false;

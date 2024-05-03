@@ -111,7 +111,13 @@ private:
 	LocalVector<ProcessGroup *> local_process_group_cache; // Used when processing to group what needs to
 	uint64_t process_last_pass = 1;
 
+	LocalVector<ProcessGroup *> post_process_groups;
+	bool post_process_groups_dirty = true;
+	LocalVector<ProcessGroup *> local_post_process_group_cache; // Used when post-processing to group what needs to
+	uint64_t post_process_last_pass = 1;
+
 	ProcessGroup default_process_group;
+	ProcessGroup default_post_process_group;
 
 	bool node_threading_disabled = false;
 
@@ -122,8 +128,10 @@ private:
 
 	Window *root = nullptr;
 
+	uint64_t tree_version = 1;
 	double physics_process_time = 0.0;
 	double process_time = 0.0;
+	double post_process_time = 0.0;
 	bool accept_quit = true;
 	bool quit_on_go_back = true;
 
@@ -133,6 +141,7 @@ private:
 	bool debug_navigation_hint = false;
 #endif
 	bool paused = false;
+	int root_lock = 0;
 
 	HashMap<StringName, Group> group_map;
 	bool _quit = false;
@@ -163,6 +172,7 @@ private:
 
 	// Safety for when a node is deleted while a group is being called.
 
+	bool processing = false;
 	int nodes_removed_on_group_call_lock = 0;
 	HashSet<Node *> nodes_removed_on_group_call; // Skip erased nodes.
 
@@ -222,6 +232,14 @@ private:
 	void _add_process_group(Node *p_node);
 	void _remove_node_from_process_group(Node *p_node, Node *p_owner);
 	void _add_node_to_process_group(Node *p_node, Node *p_owner);
+
+	void _post_process_group(ProcessGroup *p_group);
+	void _post_process();
+
+	void _remove_post_process_group(Node *p_node);
+	void _add_post_process_group(Node *p_node);
+	void _remove_node_from_post_process_group(Node *p_node, Node *p_owner);
+	void _add_node_to_post_process_group(Node *p_node, Node *p_owner);
 
 	void _call_group_flags(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 	void _call_group(const Variant **p_args, int p_argcount, Callable::CallError &r_error);
@@ -316,6 +334,7 @@ public:
 
 	virtual bool physics_process(double p_time) override;
 	virtual bool process(double p_time) override;
+	virtual bool post_process(double p_time) override;
 
 	virtual void finalize() override;
 
@@ -329,6 +348,13 @@ public:
 
 	_FORCE_INLINE_ double get_physics_process_time() const { return physics_process_time; }
 	_FORCE_INLINE_ double get_process_time() const { return process_time; }
+	_FORCE_INLINE_ double get_post_process_time() const { return post_process_time; }
+
+#ifdef TOOLS_ENABLED
+	bool is_node_being_edited(const Node *p_node) const;
+#else
+	bool is_node_being_edited(const Node *p_node) const { return false; }
+#endif
 
 	void set_pause(bool p_enabled);
 	bool is_paused() const;

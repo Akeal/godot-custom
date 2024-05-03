@@ -85,7 +85,8 @@ public:
 	enum ProcessThreadMessages {
 		FLAG_PROCESS_THREAD_MESSAGES = 1,
 		FLAG_PROCESS_THREAD_MESSAGES_PHYSICS = 2,
-		FLAG_PROCESS_THREAD_MESSAGES_ALL = 3,
+		FLAG_POST_PROCESS_THREAD_MESSAGES = 3,
+		FLAG_PROCESS_THREAD_MESSAGES_ALL = 4,
 	};
 
 	enum PhysicsInterpolationMode : unsigned int {
@@ -156,6 +157,10 @@ private:
 		bool operator()(const Node *p_a, const Node *p_b) const { return p_b->data.physics_process_priority == p_a->data.physics_process_priority ? p_b->is_greater_than(p_a) : p_b->data.physics_process_priority > p_a->data.physics_process_priority; }
 	};
 
+	struct ComparatorWithPostProcessPriority {
+		bool operator()(const Node *p_a, const Node *p_b) const { return p_b->data.post_process_priority == p_a->data.post_process_priority ? p_b->is_greater_than(p_a) : p_b->data.post_process_priority > p_a->data.post_process_priority; }
+	};
+
 	// This Data struct is to avoid namespace pollution in derived classes.
 	struct Data {
 		String scene_file_path;
@@ -196,6 +201,7 @@ private:
 		int process_thread_group_order = 0;
 		BitField<ProcessThreadMessages> process_thread_messages;
 		void *process_group = nullptr; // to avoid cyclic dependency
+		void *post_process_group = nullptr; // to avoid cyclic dependency
 
 		int multiplayer_authority = 1; // Server by default.
 		Variant rpc_config;
@@ -203,6 +209,7 @@ private:
 		// Variables used to properly sort the node when processing, ignored otherwise.
 		int process_priority = 0;
 		int physics_process_priority = 0;
+		int post_process_priority = 0;
 
 		// Keep bitpacked values together to get better packing.
 		ProcessMode process_mode : 3;
@@ -210,9 +217,11 @@ private:
 
 		bool physics_process : 1;
 		bool process : 1;
+		bool post_process : 1;
 
 		bool physics_process_internal : 1;
 		bool process_internal : 1;
+		bool post_process_internal : 1;
 
 		bool input : 1;
 		bool shortcut_input : 1;
@@ -349,6 +358,7 @@ protected:
 
 	GDVIRTUAL1(_process, double)
 	GDVIRTUAL1(_physics_process, double)
+	GDVIRTUAL1(_post_process, double)
 	GDVIRTUAL0(_enter_tree)
 	GDVIRTUAL0(_exit_tree)
 	GDVIRTUAL0(_ready)
@@ -370,6 +380,7 @@ public:
 		NOTIFICATION_UNPAUSED = 15,
 		NOTIFICATION_PHYSICS_PROCESS = 16,
 		NOTIFICATION_PROCESS = 17,
+		NOTIFICATION_POST_PROCESS = 717,
 		NOTIFICATION_PARENTED = 18,
 		NOTIFICATION_UNPARENTED = 19,
 		NOTIFICATION_SCENE_INSTANTIATED = 20,
@@ -379,6 +390,7 @@ public:
 		NOTIFICATION_CHILD_ORDER_CHANGED = 24,
 		NOTIFICATION_INTERNAL_PROCESS = 25,
 		NOTIFICATION_INTERNAL_PHYSICS_PROCESS = 26,
+		NOTIFICATION_POST_PROCESS_INTERNAL = 727,
 		NOTIFICATION_POST_ENTER_TREE = 27,
 		NOTIFICATION_DISABLED = 28,
 		NOTIFICATION_ENABLED = 29,
@@ -432,6 +444,7 @@ public:
 	Node *find_child(const String &p_pattern, bool p_recursive = true, bool p_owned = true) const;
 	TypedArray<Node> find_children(const String &p_pattern, const String &p_type = "", bool p_recursive = true, bool p_owned = true) const;
 	bool has_node_and_resource(const NodePath &p_path) const;
+	bool implements_post_process() const;
 	Node *get_node_and_resource(const NodePath &p_path, Ref<Resource> &r_res, Vector<StringName> &r_leftover_subpath, bool p_last_is_property = true) const;
 
 	virtual void reparent(Node *p_parent, bool p_keep_global_transform = true);
@@ -525,8 +538,6 @@ public:
 	bool is_property_pinned(const StringName &p_property) const;
 	virtual StringName get_property_store_alias(const StringName &p_property) const;
 	bool is_part_of_edited_scene() const;
-#else
-	bool is_part_of_edited_scene() const { return false; }
 #endif
 	void get_storable_properties(HashSet<StringName> &r_storable_properties) const;
 
@@ -548,14 +559,24 @@ public:
 	double get_process_delta_time() const;
 	bool is_processing() const;
 
+	void set_post_process(bool p_process);
+	double get_post_process_delta_time() const;
+	bool is_post_processing() const;
+
 	void set_physics_process_internal(bool p_process_internal);
 	bool is_physics_processing_internal() const;
 
 	void set_process_internal(bool p_process_internal);
 	bool is_processing_internal() const;
 
+	void set_post_process_internal(bool p_process_internal);
+	bool is_post_processing_internal() const;
+
 	void set_process_priority(int p_priority);
 	int get_process_priority() const;
+
+	void set_post_process_priority(int p_priority);
+	int get_post_process_priority() const;
 
 	void set_process_thread_group_order(int p_order);
 	int get_process_thread_group_order() const;
@@ -576,7 +597,7 @@ public:
 	bool is_processing_unhandled_key_input() const;
 
 	_FORCE_INLINE_ bool _is_any_processing() const {
-		return data.process || data.process_internal || data.physics_process || data.physics_process_internal;
+		return data.process || data.process_internal || data.physics_process || data.physics_process_internal || data.post_process || data.post_process_internal;
 	}
 	_FORCE_INLINE_ bool is_accessible_from_caller_thread() const {
 		if (current_process_thread_group == nullptr) {
@@ -631,7 +652,7 @@ public:
 		return binds;
 	}
 
-	void replace_by(Node *p_node, bool p_keep_data = false);
+	void replace_by(Node *p_node, bool p_keep_groups = false, bool p_keep_children = true);
 
 	void set_process_mode(ProcessMode p_mode);
 	ProcessMode get_process_mode() const;

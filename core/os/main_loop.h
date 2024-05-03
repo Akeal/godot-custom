@@ -44,6 +44,7 @@ protected:
 	GDVIRTUAL0(_initialize)
 	GDVIRTUAL1R(bool, _physics_process, double)
 	GDVIRTUAL1R(bool, _process, double)
+	GDVIRTUAL1R(bool, _post_process, double)
 	GDVIRTUAL0(_finalize)
 
 public:
@@ -65,6 +66,7 @@ public:
 	virtual void iteration_prepare() {}
 	virtual bool physics_process(double p_time);
 	virtual bool process(double p_time);
+	virtual bool post_process(double p_time);
 	virtual void finalize();
 
 	MainLoop() {}
