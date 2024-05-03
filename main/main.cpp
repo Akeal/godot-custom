@@ -192,8 +192,8 @@ static OS::ProcessID editor_pid = 0;
 #ifdef TOOLS_ENABLED
 static bool found_project = false;
 static bool auto_build_solutions = false;
-static String debug_server_uri;
 static bool wait_for_import = false;
+static String debug_server_uri;
 #ifndef DISABLE_DEPRECATED
 static int converter_max_kb_file = 4 * 1024; // 4MB
 static int converter_max_line_length = 100000;
@@ -1443,6 +1443,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			quit_after = 1;
 		} else if (arg == "--export-release" || arg == "--export-debug" ||
 				arg == "--export-pack") { // Export project
+
+		} else if (I->get() == "--export-release" || I->get() == "--export-debug" ||
+				I->get() == "--export-pack") { // Export project
 			// Actually handling is done in start().
 			editor = true;
 			cmdline_tool = true;
