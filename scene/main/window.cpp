@@ -615,6 +615,7 @@ void Window::_make_window() {
 	}
 
 	_update_window_size();
+	set_position(window_rect.position);
 
 	if (transient_parent && transient_parent->window_id != DisplayServer::INVALID_WINDOW_ID) {
 		DisplayServer::get_singleton()->window_set_transient(window_id, transient_parent->window_id);
