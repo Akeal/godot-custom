@@ -610,6 +610,10 @@ void TextureStorage::canvas_texture_set_channel(RID p_canvas_texture, RS::Canvas
 		} break;
 		case RS::CANVAS_TEXTURE_CHANNEL_SPECULAR: {
 			ct->specular = p_texture;
+		case RS::CANVAS_TEXTURE_CHANNEL_DEPTH: {
+			ct->depth = p_texture;
+		case RS::CANVAS_TEXTURE_CHANNEL_DITHER: {
+			ct->dither = p_texture;
 		} break;
 	}
 

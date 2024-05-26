@@ -391,7 +391,10 @@ class CanvasTexture : public Texture2D {
 	Ref<Texture2D> diffuse_texture;
 	Ref<Texture2D> normal_texture;
 	Ref<Texture2D> specular_texture;
+	Ref<Texture2D> depth_texture;
+	Ref<Texture2D> dither_texture;
 	Color specular = Color(1, 1, 1, 1);
+	int max_depth = 1;
 	real_t shininess = 1.0;
 
 	RID canvas_texture;
@@ -417,6 +420,12 @@ public:
 
 	void set_specular_shininess(real_t p_shininess);
 	real_t get_specular_shininess() const;
+
+	void set_depth_texture(const Ref<Texture2D> &p_depth);
+	Ref<Texture2D> get_depth_texture() const;
+
+	void set_dither_texture(const Ref<Texture2D> &p_dither);
+	Ref<Texture2D> get_dither_texture() const;
 
 	void set_texture_filter(CanvasItem::TextureFilter p_filter);
 	CanvasItem::TextureFilter get_texture_filter() const;

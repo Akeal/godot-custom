@@ -5351,6 +5351,12 @@
 		<constant name="CANVAS_TEXTURE_CHANNEL_SPECULAR" value="2" enum="CanvasTextureChannel">
 			Specular map canvas texture ([member CanvasTexture.specular_texture]).
 		</constant>
+		<constant name="CANVAS_TEXTURE_CHANNEL_DEPTH" value="3" enum="CanvasTextureChannel">
+			Depth map canvas texture ([member CanvasTexture.depth_texture]).
+		</constant>
+		<constant name="CANVAS_TEXTURE_CHANNEL_DITHER" value="4" enum="CanvasTextureChannel">
+			Dither map canvas texture ([member CanvasTexture.dither_texture]).
+		</constant>
 		<constant name="NINE_PATCH_STRETCH" value="0" enum="NinePatchAxisMode">
 			The nine patch gets stretched where needed.
 		</constant>

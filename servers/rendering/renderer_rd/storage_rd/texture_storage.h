@@ -91,6 +91,8 @@ private:
 		RID diffuse;
 		RID normal_map;
 		RID specular;
+		RID depth;
+		RID dither;
 		Color specular_color = Color(1, 1, 1, 1);
 		float shininess = 1.0;
 

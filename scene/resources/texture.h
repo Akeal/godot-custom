@@ -81,7 +81,7 @@ public:
 	virtual bool get_rect_region(const Rect2 &p_rect, const Rect2 &p_src_rect, Rect2 &r_rect, Rect2 &r_src_rect) const;
 
 	virtual Ref<Image> get_image() const { return Ref<Image>(); }
-
+	
 	virtual Ref<Resource> create_placeholder() const;
 
 	Texture2D();
