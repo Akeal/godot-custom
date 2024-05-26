@@ -985,7 +985,7 @@
 				Sets the [param channel]'s [param texture] for the canvas texture specified by the [param canvas_texture] RID. Equivalent to [member CanvasTexture.diffuse_texture], [member CanvasTexture.normal_texture] and [member CanvasTexture.specular_texture].
 			</description>
 		</method>
-		<method name="canvas_texture_set_shading_parameters">
+		<method name="canvas_texture_set_specular_parameters">
 			<return type="void" />
 			<param index="0" name="canvas_texture" type="RID" />
 			<param index="1" name="base_color" type="Color" />

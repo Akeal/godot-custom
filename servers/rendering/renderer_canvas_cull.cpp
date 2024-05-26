@@ -2074,9 +2074,14 @@ void RendererCanvasCull::canvas_texture_set_channel(RID p_canvas_texture, RS::Ca
 	RSG::texture_storage->canvas_texture_set_channel(p_canvas_texture, p_channel, p_texture);
 }
 
-void RendererCanvasCull::canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) {
-	RSG::texture_storage->canvas_texture_set_shading_parameters(p_canvas_texture, p_base_color, p_shininess);
+void RendererCanvasCull::canvas_texture_set_specular_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) {
+	RSG::texture_storage->canvas_texture_set_specular_parameters(p_canvas_texture, p_base_color, p_shininess);
 }
+
+void RendererCanvasCull::canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth) {
+	RSG::texture_storage->canvas_texture_set_depth_parameters(p_canvas_texture, max_depth);
+}
+
 
 void RendererCanvasCull::canvas_texture_set_texture_filter(RID p_canvas_texture, RS::CanvasItemTextureFilter p_filter) {
 	RSG::texture_storage->canvas_texture_set_texture_filter(p_canvas_texture, p_filter);

@@ -1644,7 +1644,7 @@ void CanvasTexture::set_specular_color(const Color &p_color) {
 		return;
 	}
 	specular = p_color;
-	RS::get_singleton()->canvas_texture_set_shading_parameters(canvas_texture, specular, shininess);
+	RS::get_singleton()->canvas_texture_set_specular_parameters(canvas_texture, specular, shininess);
 	emit_changed();
 }
 
@@ -1657,12 +1657,25 @@ void CanvasTexture::set_specular_shininess(real_t p_shininess) {
 		return;
 	}
 	shininess = p_shininess;
-	RS::get_singleton()->canvas_texture_set_shading_parameters(canvas_texture, specular, shininess);
+	RS::get_singleton()->canvas_texture_set_specular_parameters(canvas_texture, specular, shininess);
 	emit_changed();
 }
 
 real_t CanvasTexture::get_specular_shininess() const {
 	return shininess;
+}
+
+void CanvasTexture::set_maximum_depth(real_t p_max_depth) {
+	if (max_depth == p_max_depth) {
+		return;
+	}
+	max_depth = p_max_depth;
+	RS::get_singleton()->canvas_texture_set_depth_parameters(canvas_texture, max_depth);
+	emit_changed();
+}
+
+real_t CanvasTexture::get_maximum_depth() const {
+	return max_depth;
 }
 
 void CanvasTexture::set_texture_filter(CanvasItem::TextureFilter p_filter) {
@@ -1750,6 +1763,9 @@ void CanvasTexture::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_depth_texture", "texture"), &CanvasTexture::set_depth_texture);
 	ClassDB::bind_method(D_METHOD("get_depth_texture"), &CanvasTexture::get_depth_texture);
+
+	ClassDB::bind_method(D_METHOD("set_maximum_depth", "max_depth"), &CanvasTexture::set_maximum_depth);
+	ClassDB::bind_method(D_METHOD("get_maximum_depth"), &CanvasTexture::get_maximum_depth);
 
 	ClassDB::bind_method(D_METHOD("set_dither_texture", "texture"), &CanvasTexture::set_dither_texture);
 	ClassDB::bind_method(D_METHOD("get_dither_texture"), &CanvasTexture::get_dither_texture);

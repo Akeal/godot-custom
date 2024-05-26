@@ -421,6 +421,9 @@ public:
 	void set_specular_shininess(real_t p_shininess);
 	real_t get_specular_shininess() const;
 
+	void set_maximum_depth(real_t p_shininess);
+	real_t get_maximum_depth() const;
+
 	void set_depth_texture(const Ref<Texture2D> &p_depth);
 	Ref<Texture2D> get_depth_texture() const;
 

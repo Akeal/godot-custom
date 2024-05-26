@@ -278,15 +278,17 @@ void TextureStorage::canvas_texture_set_channel(RID p_canvas_texture, RS::Canvas
 		} break;
 		case RS::CANVAS_TEXTURE_CHANNEL_SPECULAR: {
 			ct->specular = p_texture;
+		} break;
 		case RS::CANVAS_TEXTURE_CHANNEL_DEPTH: {
 			ct->depth = p_texture;
+		} break;
 		case RS::CANVAS_TEXTURE_CHANNEL_DITHER: {
 			ct->dither = p_texture;
 		} break;
 	}
 }
 
-void TextureStorage::canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_specular_color, float p_shininess) {
+void TextureStorage::canvas_texture_set_specular_parameters(RID p_canvas_texture, const Color &p_specular_color, float p_shininess) {
 	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
 	ERR_FAIL_NULL(ct);
 
@@ -294,6 +296,13 @@ void TextureStorage::canvas_texture_set_shading_parameters(RID p_canvas_texture,
 	ct->specular_color.g = p_specular_color.g;
 	ct->specular_color.b = p_specular_color.b;
 	ct->specular_color.a = p_shininess;
+}
+
+void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, const int max_depth) {
+	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
+	ERR_FAIL_NULL(ct);
+
+	ct->max_depth = max_depth;
 }
 
 void TextureStorage::canvas_texture_set_texture_filter(RID p_canvas_texture, RS::CanvasItemTextureFilter p_filter) {

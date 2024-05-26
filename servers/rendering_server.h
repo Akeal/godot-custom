@@ -1422,7 +1422,8 @@ public:
 		CANVAS_TEXTURE_CHANNEL_DITHER
 	};
 	virtual void canvas_texture_set_channel(RID p_canvas_texture, CanvasTextureChannel p_channel, RID p_texture) = 0;
-	virtual void canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) = 0;
+	virtual void canvas_texture_set_specular_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) = 0;
+	virtual void canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth) = 0;
 
 	// Takes effect only for new draw commands.
 	virtual void canvas_texture_set_texture_filter(RID p_canvas_texture, CanvasItemTextureFilter p_filter) = 0;

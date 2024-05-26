@@ -53,7 +53,8 @@ public:
 	virtual void canvas_texture_free(RID p_rid) = 0;
 
 	virtual void canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) = 0;
-	virtual void canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) = 0;
+	virtual void canvas_texture_set_specular_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) = 0;
+	virtual void canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth) = 0;
 
 	virtual void canvas_texture_set_texture_filter(RID p_item, RS::CanvasItemTextureFilter p_filter) = 0;
 	virtual void canvas_texture_set_texture_repeat(RID p_item, RS::CanvasItemTextureRepeat p_repeat) = 0;
