@@ -31,6 +31,8 @@
 #include "canvas_item.h"
 #include "canvas_item.compat.inc"
 
+#include "core/object/object.h"
+#include "core/variant/variant.h"
 #include "scene/2d/canvas_group.h"
 #include "scene/main/canvas_layer.h"
 #include "scene/main/window.h"
@@ -1665,17 +1667,30 @@ real_t CanvasTexture::get_specular_shininess() const {
 	return shininess;
 }
 
-void CanvasTexture::set_maximum_depth(real_t p_max_depth) {
+void CanvasTexture::set_maximum_depth(int p_max_depth) {
 	if (max_depth == p_max_depth) {
 		return;
 	}
 	max_depth = p_max_depth;
-	RS::get_singleton()->canvas_texture_set_depth_parameters(canvas_texture, max_depth);
+	RS::get_singleton()->canvas_texture_set_depth_parameters(canvas_texture, max_depth, depth_base_position);
 	emit_changed();
 }
 
-real_t CanvasTexture::get_maximum_depth() const {
+int CanvasTexture::get_maximum_depth() const {
 	return max_depth;
+}
+
+void CanvasTexture::set_depth_base_position(Vector2i p_depth_base_position) {
+	if (depth_base_position == p_depth_base_position) {
+		return;
+	}
+	depth_base_position = p_depth_base_position;
+	RS::get_singleton()->canvas_texture_set_depth_parameters(canvas_texture, max_depth, p_depth_base_position);
+	emit_changed();
+}
+
+Vector2i CanvasTexture::get_depth_base_position() const {
+	return depth_base_position;
 }
 
 void CanvasTexture::set_texture_filter(CanvasItem::TextureFilter p_filter) {
@@ -1767,6 +1782,9 @@ void CanvasTexture::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_maximum_depth", "max_depth"), &CanvasTexture::set_maximum_depth);
 	ClassDB::bind_method(D_METHOD("get_maximum_depth"), &CanvasTexture::get_maximum_depth);
 
+	ClassDB::bind_method(D_METHOD("set_depth_base_position", "depth_base_position"), &CanvasTexture::set_depth_base_position);
+	ClassDB::bind_method(D_METHOD("get_depth_base_position"), &CanvasTexture::get_depth_base_position);
+
 	ClassDB::bind_method(D_METHOD("set_dither_texture", "texture"), &CanvasTexture::set_dither_texture);
 	ClassDB::bind_method(D_METHOD("get_dither_texture"), &CanvasTexture::get_dither_texture);
 
@@ -1782,6 +1800,8 @@ void CanvasTexture::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "normal_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_normal_texture", "get_normal_texture");
 	ADD_GROUP("DepthMap", "depth_");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "depth_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_depth_texture", "get_depth_texture");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_max", PROPERTY_HINT_RANGE, "0,2147483647,1"), "set_maximum_depth", "get_maximum_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "depth_base_position"), "set_depth_base_position", "get_depth_base_position");
 	ADD_GROUP("DitherMap", "dither_");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "dither_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_dither_texture", "get_dither_texture");
 	ADD_GROUP("Specular", "specular_");

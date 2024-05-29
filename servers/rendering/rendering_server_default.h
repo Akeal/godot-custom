@@ -857,7 +857,7 @@ public:
 	FUNCRIDSPLIT(canvas_texture)
 	FUNC3(canvas_texture_set_channel, RID, CanvasTextureChannel, RID)
 	FUNC3(canvas_texture_set_specular_parameters, RID, const Color &, float)
-	FUNC2(canvas_texture_set_depth_parameters, RID, int)
+	FUNC3(canvas_texture_set_depth_parameters, RID, int, Vector2i)
 
 	FUNC2(canvas_texture_set_texture_filter, RID, CanvasItemTextureFilter)
 	FUNC2(canvas_texture_set_texture_repeat, RID, CanvasItemTextureRepeat)

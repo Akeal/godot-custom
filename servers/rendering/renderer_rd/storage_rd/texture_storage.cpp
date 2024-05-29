@@ -633,11 +633,12 @@ void TextureStorage::canvas_texture_set_specular_parameters(RID p_canvas_texture
 	ct->clear_sets();
 }
 
-void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth) {
+void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth, Vector2i depth_base_position) {
 	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
 	ERR_FAIL_NULL(ct);
 
 	ct->max_depth = max_depth;
+	ct->depth_base_position = depth_base_position;
 	ct->clear_sets();
 }
 

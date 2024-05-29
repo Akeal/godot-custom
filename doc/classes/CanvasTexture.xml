@@ -18,6 +18,18 @@
 			The normal map texture to use. Only has a visible effect if [Light2D]s are affecting this [CanvasTexture].
 			[b]Note:[/b] Godot expects the normal map to use X+, Y+, and Z+ coordinates. See [url=http://wiki.polycount.com/wiki/Normal_Map_Technical_Details#Common_Swizzle_Coordinates]this page[/url] for a comparison of normal map coordinates expected by popular engines.
 		</member>
+		<member name="depth_texture" type="Texture2D" setter="set_depth_texture" getter="get_depth_texture">
+			The depth map texture to use. Used in calculating the volume this sprite occupies in 3D space for lighting.
+		</member>
+		<member name="max_depth" type="float" setter="set_maximum_depth" getter="get_maximum_depth" default="1.0">
+			The maximum depth the depth texture can represent. The depth of the sprite will be from 0 to this value.
+		</member>
+		<member name="depth_base_position" type="Vector2i" setter="set_depth_base_position" getter="get_depth_base_position" default="1.0">
+			The location of the base of the depth volume. This is where the height of the object should be measured from. In other words, this is the point on the sprite that touches the ground.
+		</member>
+		<member name="dither_texture" type="Texture2D" setter="set_dither_texture" getter="get_dither_texture">
+			The dither map texture to use. Used to determine the dithering pattern when this sprite is lit.
+		</member>
 		<member name="resource_local_to_scene" type="bool" setter="set_local_to_scene" getter="is_local_to_scene" overrides="Resource" default="false" />
 		<member name="specular_color" type="Color" setter="set_specular_color" getter="get_specular_color" default="Color(1, 1, 1, 1)">
 			The multiplier for specular reflection colors. The [Light2D]'s color is also taken into account when determining the reflection color. Only has a visible effect if [Light2D]s are affecting this [CanvasTexture].

@@ -3191,7 +3191,7 @@ void RenderingServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("canvas_texture_create"), &RenderingServer::canvas_texture_create);
 	ClassDB::bind_method(D_METHOD("canvas_texture_set_channel", "canvas_texture", "channel", "texture"), &RenderingServer::canvas_texture_set_channel);
 	ClassDB::bind_method(D_METHOD("canvas_texture_set_specular_parameters", "canvas_texture", "base_color", "shininess"), &RenderingServer::canvas_texture_set_specular_parameters);
-	ClassDB::bind_method(D_METHOD("canvas_texture_set_depth_parameters", "canvas_texture", "max_depth"), &RenderingServer::canvas_texture_set_depth_parameters);
+	ClassDB::bind_method(D_METHOD("canvas_texture_set_depth_parameters", "canvas_texture", "max_depth", "depth_base_position"), &RenderingServer::canvas_texture_set_depth_parameters);
 
 	ClassDB::bind_method(D_METHOD("canvas_texture_set_texture_filter", "canvas_texture", "filter"), &RenderingServer::canvas_texture_set_texture_filter);
 	ClassDB::bind_method(D_METHOD("canvas_texture_set_texture_repeat", "canvas_texture", "repeat"), &RenderingServer::canvas_texture_set_texture_repeat);
