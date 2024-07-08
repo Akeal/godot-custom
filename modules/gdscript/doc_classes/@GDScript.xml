@@ -314,7 +314,7 @@
 				@export var image_array: Array[Image]
 				@export var node_array: Array[Node]
 				[/codeblock]
-				[b]Note:[/b] Custom resources and nodes must be registered as global classes using [code]class_name[/code].
+				[b]Note:[/b] Custom resources and nodes should be registered as global classes using [code]class_name[/code], since the Inspector currently only supports global classes. Otherwise, a less specific type will be exported instead.
 				[b]Note:[/b] Node export is only supported in [Node]-derived classes and has a number of other limitations.
 			</description>
 		</annotation>
@@ -349,10 +349,11 @@
 			<param index="1" name="hint_string" type="String" />
 			<param index="2" name="usage" type="int" enum="PropertyUsageFlags" is_bitfield="true" default="6" />
 			<description>
-				Allows you to set a custom hint, hint string, and usage flags for the exported property. Note that there's no validation done in GDScript, it will just pass the hint along to the editor.
+				Allows you to set a custom hint, hint string, and usage flags for the exported property. Note that there's no validation done in GDScript, it will just pass the parameters to the editor.
 				[codeblock]
 				@export_custom(PROPERTY_HINT_NONE, "suffix:m") var suffix: Vector3
 				[/codeblock]
+				[b]Note:[/b] Regardless of the [param usage] value, the [constant PROPERTY_USAGE_SCRIPT_VARIABLE] flag is always added, as with any explicitly declared script variable.
 			</description>
 		</annotation>
 		<annotation name="@export_dir">

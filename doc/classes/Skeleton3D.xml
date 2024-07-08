@@ -41,7 +41,7 @@
 			<return type="int" />
 			<param index="0" name="name" type="String" />
 			<description>
-				Returns the bone index that matches [param name] as its name.
+				Returns the bone index that matches [param name] as its name. Returns [code]-1[/code] if no bone with this name exists.
 			</description>
 		</method>
 		<method name="force_update_all_bone_transforms" deprecated="This method should only be called internally.">
@@ -155,6 +155,13 @@
 				Returns the rest transform for a bone [param bone_idx].
 			</description>
 		</method>
+		<method name="get_concatenated_bone_names" qualifiers="const">
+			<return type="StringName" />
+			<description>
+				Returns all bone names concatenated with commas ([code],[/code]) as a single [StringName].
+				It is useful to set it as a hint for the enum property.
+			</description>
+		</method>
 		<method name="get_parentless_bones" qualifiers="const">
 			<return type="PackedInt32Array" />
 			<description>
@@ -236,6 +243,8 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				This method exists for compatibility with old structures in which the [Skeleton3D] does not have a [PhysicalBoneSimulator3D] as a child, but directly has [PhysicalBone3D]s as children.
+				In case you need to raycast to it without running [method physical_bones_start_simulation], call this method with [code]enabled == true[/code].
 			</description>
 		</method>
 		<method name="set_bone_enabled">

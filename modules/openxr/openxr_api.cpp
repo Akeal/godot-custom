@@ -54,6 +54,7 @@
 #endif
 
 #include "extensions/openxr_composition_layer_depth_extension.h"
+#include "extensions/openxr_eye_gaze_interaction.h"
 #include "extensions/openxr_fb_display_refresh_rate_extension.h"
 #include "extensions/openxr_fb_foveation_extension.h"
 #include "extensions/openxr_fb_update_swapchain_extension.h"
@@ -901,6 +902,47 @@ bool OpenXRAPI::setup_play_space() {
 
 		new_reference_space = XR_REFERENCE_SPACE_TYPE_LOCAL;
 		will_emulate_local_floor = true;
+
+		if (local_floor_emulation.local_space == XR_NULL_HANDLE) {
+			XrReferenceSpaceCreateInfo create_info = {
+				XR_TYPE_REFERENCE_SPACE_CREATE_INFO, // type
+				nullptr, // next
+				XR_REFERENCE_SPACE_TYPE_LOCAL, // referenceSpaceType
+				identityPose, // poseInReferenceSpace
+			};
+
+			XrResult result = xrCreateReferenceSpace(session, &create_info, &local_floor_emulation.local_space);
+			if (XR_FAILED(result)) {
+				print_line("OpenXR: Failed to create LOCAL space in order to emulate LOCAL_FLOOR [", get_error_string(result), "]");
+				will_emulate_local_floor = false;
+			}
+		}
+
+		if (local_floor_emulation.stage_space == XR_NULL_HANDLE) {
+			XrReferenceSpaceCreateInfo create_info = {
+				XR_TYPE_REFERENCE_SPACE_CREATE_INFO, // type
+				nullptr, // next
+				XR_REFERENCE_SPACE_TYPE_STAGE, // referenceSpaceType
+				identityPose, // poseInReferenceSpace
+			};
+
+			XrResult result = xrCreateReferenceSpace(session, &create_info, &local_floor_emulation.stage_space);
+			if (XR_FAILED(result)) {
+				print_line("OpenXR: Failed to create STAGE space in order to emulate LOCAL_FLOOR [", get_error_string(result), "]");
+				will_emulate_local_floor = false;
+			}
+		}
+
+		if (!will_emulate_local_floor) {
+			if (local_floor_emulation.local_space != XR_NULL_HANDLE) {
+				xrDestroySpace(local_floor_emulation.local_space);
+				local_floor_emulation.local_space = XR_NULL_HANDLE;
+			}
+			if (local_floor_emulation.stage_space != XR_NULL_HANDLE) {
+				xrDestroySpace(local_floor_emulation.stage_space);
+				local_floor_emulation.stage_space = XR_NULL_HANDLE;
+			}
+		}
 	} else {
 		// Fallback on LOCAL, which all OpenXR runtimes are required to support.
 		print_verbose(String("OpenXR: ") + OpenXRUtil::get_reference_space_name(requested_reference_space) + String(" isn't supported, defaulting to LOCAL space."));
@@ -930,16 +972,11 @@ bool OpenXRAPI::setup_play_space() {
 	play_space = new_play_space;
 	reference_space = new_reference_space;
 
-	emulating_local_floor = will_emulate_local_floor;
-	if (emulating_local_floor) {
-		// We'll use the STAGE space to get the floor height, but we can't do that until
-		// after xrWaitFrame(), so just set this flag for now.
-		// Render state will be updated then.
-		should_reset_emulated_floor_height = true;
-	} else {
-		// Update render state so this play space is used rendering the upcoming frame.
-		set_render_play_space(play_space);
-	}
+	local_floor_emulation.enabled = will_emulate_local_floor;
+	local_floor_emulation.should_reset_floor_height = will_emulate_local_floor;
+
+	// Update render state so this play space is used rendering the upcoming frame.
+	set_render_play_space(play_space);
 
 	return true;
 }
@@ -974,63 +1011,39 @@ bool OpenXRAPI::setup_view_space() {
 }
 
 bool OpenXRAPI::reset_emulated_floor_height() {
-	ERR_FAIL_COND_V(!emulating_local_floor, false);
-
-	// This is based on the example code in the OpenXR spec which shows how to
-	// emulate LOCAL_FLOOR if it's not supported.
-	// See: https://registry.khronos.org/OpenXR/specs/1.0/html/xrspec.html#XR_EXT_local_floor
+	ERR_FAIL_COND_V(!local_floor_emulation.enabled, false);
+	ERR_FAIL_COND_V(local_floor_emulation.local_space == XR_NULL_HANDLE, false);
+	ERR_FAIL_COND_V(local_floor_emulation.stage_space == XR_NULL_HANDLE, false);
 
 	XrResult result;
-
-	XrPosef identityPose = {
-		{ 0.0, 0.0, 0.0, 1.0 },
-		{ 0.0, 0.0, 0.0 }
-	};
-
-	XrSpace local_space = XR_NULL_HANDLE;
-	XrSpace stage_space = XR_NULL_HANDLE;
-
-	XrReferenceSpaceCreateInfo create_info = {
-		XR_TYPE_REFERENCE_SPACE_CREATE_INFO, // type
-		nullptr, // next
-		XR_REFERENCE_SPACE_TYPE_LOCAL, // referenceSpaceType
-		identityPose, // poseInReferenceSpace
-	};
-
-	result = xrCreateReferenceSpace(session, &create_info, &local_space);
-	if (XR_FAILED(result)) {
-		print_line("OpenXR: Failed to create LOCAL space in order to emulate LOCAL_FLOOR [", get_error_string(result), "]");
-		return false;
-	}
-
-	create_info.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
-	result = xrCreateReferenceSpace(session, &create_info, &stage_space);
-	if (XR_FAILED(result)) {
-		print_line("OpenXR: Failed to create STAGE space in order to emulate LOCAL_FLOOR [", get_error_string(result), "]");
-		xrDestroySpace(local_space);
-		return false;
-	}
 
 	XrSpaceLocation stage_location = {
 		XR_TYPE_SPACE_LOCATION, // type
 		nullptr, // next
 		0, // locationFlags
-		identityPose, // pose
+		{ { 0.0, 0.0, 0.0, 1.0 }, { 0.0, 0.0, 0.0 } }, // pose
 	};
 
-	result = xrLocateSpace(stage_space, local_space, get_predicted_display_time(), &stage_location);
-
-	xrDestroySpace(local_space);
-	xrDestroySpace(stage_space);
+	result = xrLocateSpace(local_floor_emulation.stage_space, local_floor_emulation.local_space, get_predicted_display_time(), &stage_location);
 
 	if (XR_FAILED(result)) {
 		print_line("OpenXR: Failed to locate STAGE space in LOCAL space, in order to emulate LOCAL_FLOOR [", get_error_string(result), "]");
 		return false;
 	}
 
+	XrPosef pose = {
+		{ 0.0, 0.0, 0.0, 1.0 },
+		{ 0.0, stage_location.pose.position.y, 0.0 }
+	};
+
+	XrReferenceSpaceCreateInfo create_info = {
+		XR_TYPE_REFERENCE_SPACE_CREATE_INFO, // type
+		nullptr, // next
+		XR_REFERENCE_SPACE_TYPE_LOCAL, // referenceSpaceType
+		pose, // poseInReferenceSpace
+	};
+
 	XrSpace new_play_space;
-	create_info.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-	create_info.poseInReferenceSpace.position.y = stage_location.pose.position.y;
 	result = xrCreateReferenceSpace(session, &create_info, &new_play_space);
 	if (XR_FAILED(result)) {
 		print_line("OpenXR: Failed to recreate emulated LOCAL_FLOOR play space with latest floor estimate [", get_error_string(result), "]");
@@ -1219,6 +1232,10 @@ bool OpenXRAPI::create_main_swapchains(Size2i p_size) {
 		}
 	};
 
+	for (OpenXRExtensionWrapper *wrapper : registered_extension_wrappers) {
+		wrapper->on_main_swapchains_created();
+	}
+
 	return true;
 };
 
@@ -1270,6 +1287,16 @@ void OpenXRAPI::destroy_session() {
 		xrDestroySpace(view_space);
 		view_space = XR_NULL_HANDLE;
 	}
+	if (local_floor_emulation.local_space != XR_NULL_HANDLE) {
+		xrDestroySpace(local_floor_emulation.local_space);
+		local_floor_emulation.local_space = XR_NULL_HANDLE;
+	}
+	if (local_floor_emulation.stage_space != XR_NULL_HANDLE) {
+		xrDestroySpace(local_floor_emulation.stage_space);
+		local_floor_emulation.stage_space = XR_NULL_HANDLE;
+	}
+	local_floor_emulation.enabled = false;
+	local_floor_emulation.should_reset_floor_height = false;
 
 	if (supported_reference_spaces != nullptr) {
 		// free previous results
@@ -1334,8 +1361,8 @@ bool OpenXRAPI::on_state_synchronized() {
 	// Just in case, see if we already have active trackers...
 	List<RID> trackers;
 	tracker_owner.get_owned_list(&trackers);
-	for (int i = 0; i < trackers.size(); i++) {
-		tracker_check_profile(trackers[i]);
+	for (const RID &tracker : trackers) {
+		tracker_check_profile(tracker);
 	}
 
 	for (OpenXRExtensionWrapper *wrapper : registered_extension_wrappers) {
@@ -1826,6 +1853,46 @@ bool OpenXRAPI::get_view_projection(uint32_t p_view, double p_z_near, double p_z
 	return graphics_extension->create_projection_fov(render_state.views[p_view].fov, p_z_near, p_z_far, p_camera_matrix);
 }
 
+Vector2 OpenXRAPI::get_eye_focus(uint32_t p_view, float p_aspect) {
+	ERR_FAIL_NULL_V(graphics_extension, Vector2());
+
+	if (!render_state.running) {
+		return Vector2();
+	}
+
+	// xrWaitFrame not run yet
+	if (render_state.predicted_display_time == 0) {
+		return Vector2();
+	}
+
+	// we don't have valid view info
+	if (render_state.views == nullptr || !render_state.view_pose_valid) {
+		return Vector2();
+	}
+
+	Projection cm;
+	if (!graphics_extension->create_projection_fov(render_state.views[p_view].fov, 0.1, 1000.0, cm)) {
+		return Vector2();
+	}
+
+	// Default focus to center...
+	Vector3 focus = cm.xform(Vector3(0.0, 0.0, 999.9));
+
+	// Lets check for eye tracking...
+	OpenXREyeGazeInteractionExtension *eye_gaze_interaction = OpenXREyeGazeInteractionExtension::get_singleton();
+	if (eye_gaze_interaction && eye_gaze_interaction->supports_eye_gaze_interaction()) {
+		Vector3 eye_gaze_pose;
+		if (eye_gaze_interaction->get_eye_gaze_pose(1.0, eye_gaze_pose)) {
+			Transform3D view_transform = transform_from_pose(render_state.views[p_view].pose);
+
+			eye_gaze_pose = view_transform.xform_inv(eye_gaze_pose);
+			focus = cm.xform(eye_gaze_pose);
+		}
+	}
+
+	return Vector2(focus.x, focus.y);
+}
+
 bool OpenXRAPI::poll_events() {
 	ERR_FAIL_COND_V(instance == XR_NULL_HANDLE, false);
 
@@ -1908,8 +1975,8 @@ bool OpenXRAPI::poll_events() {
 				XrEventDataReferenceSpaceChangePending *event = (XrEventDataReferenceSpaceChangePending *)&runtimeEvent;
 
 				print_verbose(String("OpenXR EVENT: reference space type ") + OpenXRUtil::get_reference_space_name(event->referenceSpaceType) + " change pending!");
-				if (emulating_local_floor) {
-					should_reset_emulated_floor_height = true;
+				if (local_floor_emulation.enabled) {
+					local_floor_emulation.should_reset_floor_height = true;
 				}
 				if (event->poseValid && xr_interface) {
 					xr_interface->on_pose_recentered();
@@ -1922,8 +1989,8 @@ bool OpenXRAPI::poll_events() {
 
 				List<RID> trackers;
 				tracker_owner.get_owned_list(&trackers);
-				for (int i = 0; i < trackers.size(); i++) {
-					tracker_check_profile(trackers[i], event->session);
+				for (const RID &tracker : trackers) {
+					tracker_check_profile(tracker, event->session);
 				}
 
 			} break;
@@ -2052,14 +2119,16 @@ bool OpenXRAPI::process() {
 
 	set_render_display_info(frame_state.predictedDisplayTime, frame_state.shouldRender);
 
+	// This is before setup_play_space() to ensure that it happens on the frame after
+	// the play space has been created.
+	if (unlikely(local_floor_emulation.should_reset_floor_height && !play_space_is_dirty)) {
+		reset_emulated_floor_height();
+		local_floor_emulation.should_reset_floor_height = false;
+	}
+
 	if (unlikely(play_space_is_dirty)) {
 		setup_play_space();
 		play_space_is_dirty = false;
-	}
-
-	if (unlikely(should_reset_emulated_floor_height)) {
-		reset_emulated_floor_height();
-		should_reset_emulated_floor_height = false;
 	}
 
 	for (OpenXRExtensionWrapper *wrapper : registered_extension_wrappers) {
@@ -2261,7 +2330,7 @@ void OpenXRAPI::end_frame() {
 		};
 		result = xrEndFrame(session, &frame_end_info);
 		if (XR_FAILED(result)) {
-			print_line("OpenXR: failed to end frame! [", get_error_string(result), "]");
+			print_line("OpenXR: rendering skipped and failed to end frame! [", get_error_string(result), "]");
 			return;
 		}
 
@@ -2633,10 +2702,23 @@ bool OpenXRAPI::xr_result(XrResult result, const char *format, Array args) const
 RID OpenXRAPI::get_tracker_rid(XrPath p_path) {
 	List<RID> current;
 	tracker_owner.get_owned_list(&current);
-	for (int i = 0; i < current.size(); i++) {
-		Tracker *tracker = tracker_owner.get_or_null(current[i]);
+	for (const RID &E : current) {
+		Tracker *tracker = tracker_owner.get_or_null(E);
 		if (tracker && tracker->toplevel_path == p_path) {
-			return current[i];
+			return E;
+		}
+	}
+
+	return RID();
+}
+
+RID OpenXRAPI::find_tracker(const String &p_name) {
+	List<RID> current;
+	tracker_owner.get_owned_list(&current);
+	for (const RID &E : current) {
+		Tracker *tracker = tracker_owner.get_or_null(E);
+		if (tracker && tracker->name == p_name) {
+			return E;
 		}
 	}
 
@@ -2827,10 +2909,23 @@ void OpenXRAPI::action_set_free(RID p_action_set) {
 RID OpenXRAPI::get_action_rid(XrAction p_action) {
 	List<RID> current;
 	action_owner.get_owned_list(&current);
-	for (int i = 0; i < current.size(); i++) {
-		Action *action = action_owner.get_or_null(current[i]);
+	for (const RID &E : current) {
+		Action *action = action_owner.get_or_null(E);
 		if (action && action->handle == p_action) {
-			return current[i];
+			return E;
+		}
+	}
+
+	return RID();
+}
+
+RID OpenXRAPI::find_action(const String &p_name) {
+	List<RID> current;
+	action_owner.get_owned_list(&current);
+	for (const RID &E : current) {
+		Action *action = action_owner.get_or_null(E);
+		if (action && action->name == p_name) {
+			return E;
 		}
 	}
 
@@ -2931,10 +3026,10 @@ void OpenXRAPI::action_free(RID p_action) {
 RID OpenXRAPI::get_interaction_profile_rid(XrPath p_path) {
 	List<RID> current;
 	interaction_profile_owner.get_owned_list(&current);
-	for (int i = 0; i < current.size(); i++) {
-		InteractionProfile *ip = interaction_profile_owner.get_or_null(current[i]);
+	for (const RID &E : current) {
+		InteractionProfile *ip = interaction_profile_owner.get_or_null(E);
 		if (ip && ip->path == p_path) {
-			return current[i];
+			return E;
 		}
 	}
 

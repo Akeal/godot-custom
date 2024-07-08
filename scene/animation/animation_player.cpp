@@ -32,7 +32,6 @@
 #include "animation_player.compat.inc"
 
 #include "core/config/engine.h"
-#include "scene/scene_string_names.h"
 
 bool AnimationPlayer::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
@@ -41,7 +40,7 @@ bool AnimationPlayer::_set(const StringName &p_name, const Variant &p_value) {
 	} else if (name.begins_with("next/")) {
 		String which = name.get_slicec('/', 1);
 		animation_set_next(which, p_value);
-	} else if (p_name == SceneStringNames::get_singleton()->blend_times) {
+	} else if (p_name == SceneStringName(blend_times)) {
 		Array array = p_value;
 		int len = array.size();
 		ERR_FAIL_COND_V(len % 3, false);
@@ -77,7 +76,7 @@ bool AnimationPlayer::_get(const StringName &p_name, Variant &r_ret) const {
 		String which = name.get_slicec('/', 1);
 		r_ret = animation_get_next(which);
 
-	} else if (name == "blend_times") {
+	} else if (p_name == SceneStringName(blend_times)) {
 		Vector<BlendKey> keys;
 		for (const KeyValue<BlendKey, double> &E : blend_times) {
 			keys.ordered_insert(E.key);
@@ -235,6 +234,9 @@ void AnimationPlayer::_process_playback_data(PlaybackData &cd, double p_delta, f
 		pi.delta = delta;
 		pi.seeked = p_seeked;
 	}
+	if (Math::is_zero_approx(pi.delta) && backwards) {
+		pi.delta = -0.0; // Sign is needed to handle converted Continuous track from Discrete track correctly.
+	}
 	// AnimationPlayer doesn't have internal seeking.
 	// However, immediately after playback, discrete keys should be retrieved with EXACT mode since behind keys must be ignored at that time.
 	pi.is_external_seeking = !p_started;
@@ -258,7 +260,7 @@ void AnimationPlayer::_blend_playback_data(double p_delta, bool p_started) {
 
 	bool seeked = c.seeked; // The animation may be changed during process, so it is safer that the state is changed before process.
 
-	if (p_delta != 0) {
+	if (!Math::is_zero_approx(p_delta)) {
 		c.seeked = false;
 	}
 
@@ -326,14 +328,14 @@ void AnimationPlayer::_blend_post_process() {
 				String new_name = playback.assigned;
 				playback_queue.pop_front();
 				if (end_notify) {
-					emit_signal(SceneStringNames::get_singleton()->animation_changed, old, new_name);
+					emit_signal(SceneStringName(animation_changed), old, new_name);
 				}
 			} else {
 				_clear_caches();
 				playing = false;
 				_set_process(false);
 				if (end_notify) {
-					emit_signal(SceneStringNames::get_singleton()->animation_finished, playback.assigned);
+					emit_signal(SceneStringName(animation_finished), playback.assigned);
 					if (movie_quit_on_finish && OS::get_singleton()->has_feature("movie")) {
 						print_line(vformat("Movie Maker mode is enabled. Quitting on animation finish as requested by: %s", get_path()));
 						get_tree()->quit();
@@ -448,10 +450,10 @@ void AnimationPlayer::_play(const StringName &p_name, double p_custom_blend, flo
 	} else {
 		if (p_from_end && c.current.pos == 0) {
 			// Animation reset but played backwards, set position to the end.
-			c.current.pos = c.current.from->animation->get_length();
+			seek(c.current.from->animation->get_length(), true, true);
 		} else if (!p_from_end && c.current.pos == c.current.from->animation->get_length()) {
 			// Animation resumed but already ended, set position to the beginning.
-			c.current.pos = 0;
+			seek(0, true, true);
 		} else if (playing) {
 			return;
 		}
@@ -463,7 +465,7 @@ void AnimationPlayer::_play(const StringName &p_name, double p_custom_blend, flo
 	_set_process(true); // Always process when starting an animation.
 	playing = true;
 
-	emit_signal(SceneStringNames::get_singleton()->animation_started, c.assigned);
+	emit_signal(SceneStringName(animation_started), c.assigned);
 
 	if (is_inside_tree() && Engine::get_singleton()->is_editor_hint()) {
 		return; // No next in this case.
@@ -582,6 +584,8 @@ void AnimationPlayer::seek(double p_time, bool p_update, bool p_update_only) {
 		return;
 	}
 
+	bool is_backward = p_time < playback.current.pos;
+
 	_check_immediately_after_start();
 
 	playback.current.pos = p_time;
@@ -597,7 +601,7 @@ void AnimationPlayer::seek(double p_time, bool p_update, bool p_update_only) {
 
 	playback.seeked = true;
 	if (p_update) {
-		_process_animation(0, p_update_only);
+		_process_animation(is_backward ? -0.0 : 0.0, p_update_only);
 		playback.seeked = false; // If animation was proceeded here, no more seek in internal process.
 	}
 }

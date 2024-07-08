@@ -1,11 +1,12 @@
-import methods
 import os
+import re
 import subprocess
 import sys
-from methods import print_warning, print_error
-from platform_methods import detect_arch
-
 from typing import TYPE_CHECKING
+
+import methods
+from methods import print_error, print_warning
+from platform_methods import detect_arch
 
 if TYPE_CHECKING:
     from SCons.Script.SConscript import SConsEnvironment
@@ -141,8 +142,9 @@ def detect_build_env_arch():
         if os.getenv("VCTOOLSINSTALLDIR"):
             host_path_index = os.getenv("PATH").upper().find(os.getenv("VCTOOLSINSTALLDIR").upper() + "BIN\\HOST")
             if host_path_index > -1:
-                first_path_arch = os.getenv("PATH").split(";")[0].rsplit("\\", 1)[-1].lower()
-                return msvc_target_aliases[first_path_arch]
+                first_path_arch = os.getenv("PATH")[host_path_index:].split(";")[0].rsplit("\\", 1)[-1].lower()
+                if first_path_arch in msvc_target_aliases.keys():
+                    return msvc_target_aliases[first_path_arch]
 
     msys_target_aliases = {
         "mingw32": "x86_32",
@@ -178,7 +180,7 @@ def get_opts():
             caller_frame = inspect.stack()[1]
             caller_script_dir = os.path.dirname(os.path.abspath(caller_frame[1]))
             d3d12_deps_folder = os.path.join(caller_script_dir, "bin", "build_deps")
-        except:  # Give up.
+        except Exception:  # Give up.
             d3d12_deps_folder = ""
 
     return [
@@ -248,10 +250,10 @@ def get_doc_path():
 def get_flags():
     arch = detect_build_env_arch() or detect_arch()
 
-    return [
-        ("arch", arch),
-        ("supported", ["mono"]),
-    ]
+    return {
+        "arch": arch,
+        "supported": ["mono"],
+    }
 
 
 def build_res_file(target, source, env: "SConsEnvironment"):
@@ -304,6 +306,7 @@ def setup_msvc_manual(env: "SConsEnvironment"):
     print("Using VCVARS-determined MSVC, arch %s" % (env_arch))
 
 
+# FIXME: Likely overwrites command-line options for the msvc compiler. See #91883.
 def setup_msvc_auto(env: "SConsEnvironment"):
     """Set up MSVC using SCons's auto-detection logic"""
 
@@ -386,15 +389,28 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
 
     env["MAXLINELENGTH"] = 8192  # Windows Vista and beyond, so always applicable.
 
-    if env["silence_msvc"]:
+    if env["silence_msvc"] and not env.GetOption("clean"):
         from tempfile import mkstemp
 
+        # Ensure we have a location to write captured output to, in case of false positives.
+        capture_path = methods.base_folder_path + "platform/windows/msvc_capture.log"
+        with open(capture_path, "wt", encoding="utf-8"):
+            pass
+
         old_spawn = env["SPAWN"]
+        re_redirect_stream = re.compile(r"^[12]?>")
+        re_cl_capture = re.compile(r"^.+\.(c|cc|cpp|cxx|c[+]{2})$", re.IGNORECASE)
+        re_link_capture = re.compile(r'\s{3}\S.+\s(?:"[^"]+.lib"|\S+.lib)\s.+\s(?:"[^"]+.exp"|\S+.exp)')
 
         def spawn_capture(sh, escape, cmd, args, env):
             # We only care about cl/link, process everything else as normal.
             if args[0] not in ["cl", "link"]:
                 return old_spawn(sh, escape, cmd, args, env)
+
+            # Process as normal if the user is manually rerouting output.
+            for arg in args:
+                if re_redirect_stream.match(arg):
+                    return old_spawn(sh, escape, cmd, args, env)
 
             tmp_stdout, tmp_stdout_name = mkstemp()
             os.close(tmp_stdout)
@@ -402,16 +418,34 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             ret = old_spawn(sh, escape, cmd, args, env)
 
             try:
-                with open(tmp_stdout_name, "rb") as tmp_stdout:
-                    # First line is always bloat, subsequent lines are always errors. If content
-                    # exists after discarding the first line, safely decode & send to stderr.
-                    tmp_stdout.readline()
-                    content = tmp_stdout.read()
-                    if content:
-                        sys.stderr.write(content.decode(sys.stdout.encoding, "replace"))
+                with open(tmp_stdout_name, "r", encoding=sys.stdout.encoding, errors="replace") as tmp_stdout:
+                    lines = tmp_stdout.read().splitlines()
                 os.remove(tmp_stdout_name)
             except OSError:
                 pass
+
+            # Early process no lines (OSError)
+            if not lines:
+                return ret
+
+            is_cl = args[0] == "cl"
+            content = ""
+            caught = False
+            for line in lines:
+                # These conditions are far from all-encompassing, but are specialized
+                # for what can be reasonably expected to show up in the repository.
+                if not caught and (is_cl and re_cl_capture.match(line)) or (not is_cl and re_link_capture.match(line)):
+                    caught = True
+                    try:
+                        with open(capture_path, "a", encoding=sys.stdout.encoding) as log:
+                            log.write(line + "\n")
+                    except OSError:
+                        print_warning(f'Failed to log captured line: "{line}".')
+                    continue
+                content += line + "\n"
+            # Content remaining assumed to be an error/warning.
+            if content:
+                sys.stderr.write(content)
 
             return ret
 
@@ -465,6 +499,14 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
     env.AppendUnique(CPPDEFINES=["NOMINMAX"])  # disable bogus min/max WinDef.h macros
     if env["arch"] == "x86_64":
         env.AppendUnique(CPPDEFINES=["_WIN64"])
+
+    # Sanitizers
+    prebuilt_lib_extra_suffix = ""
+    if env["use_asan"]:
+        env.extra_suffix += ".san"
+        prebuilt_lib_extra_suffix = ".san"
+        env.Append(CCFLAGS=["/fsanitize=address"])
+        env.Append(LINKFLAGS=["/INFERASANLIBS"])
 
     ## Libs
 
@@ -523,7 +565,7 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             env.Append(CXXFLAGS=["/bigobj"])
 
         # PIX
-        if not env["arch"] in ["x86_64", "arm64"] or env["pix_path"] == "" or not os.path.exists(env["pix_path"]):
+        if env["arch"] not in ["x86_64", "arm64"] or env["pix_path"] == "" or not os.path.exists(env["pix_path"]):
             env["use_pix"] = False
 
         if env["use_pix"]:
@@ -533,7 +575,7 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             LIBS += ["WinPixEventRuntime"]
 
         env.Append(LIBPATH=[env["mesa_libs"] + "/bin"])
-        LIBS += ["libNIR.windows." + env["arch"]]
+        LIBS += ["libNIR.windows." + env["arch"] + prebuilt_lib_extra_suffix]
 
     if env["opengl3"]:
         env.AppendUnique(CPPDEFINES=["GLES3_ENABLED"])
@@ -541,9 +583,9 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
             env.AppendUnique(CPPDEFINES=["EGL_STATIC"])
             env.Append(LIBPATH=[env["angle_libs"]])
             LIBS += [
-                "libANGLE.windows." + env["arch"],
-                "libEGL.windows." + env["arch"],
-                "libGLES.windows." + env["arch"],
+                "libANGLE.windows." + env["arch"] + prebuilt_lib_extra_suffix,
+                "libEGL.windows." + env["arch"] + prebuilt_lib_extra_suffix,
+                "libGLES.windows." + env["arch"] + prebuilt_lib_extra_suffix,
             ]
             LIBS += ["dxgi", "d3d9", "d3d11"]
         env.Prepend(CPPPATH=["#thirdparty/angle/include"])
@@ -578,12 +620,6 @@ def configure_msvc(env: "SConsEnvironment", vcvars_msvc_config):
     if vcvars_msvc_config:
         env.Prepend(CPPPATH=[p for p in str(os.getenv("INCLUDE")).split(";")])
         env.Append(LIBPATH=[p for p in str(os.getenv("LIB")).split(";")])
-
-    # Sanitizers
-    if env["use_asan"]:
-        env.extra_suffix += ".san"
-        env.Append(LINKFLAGS=["/INFERASANLIBS"])
-        env.Append(CCFLAGS=["/fsanitize=address"])
 
     # Incremental linking fix
     env["BUILDERS"]["ProgramOriginal"] = env["BUILDERS"]["Program"]
@@ -645,6 +681,7 @@ def configure_mingw(env: "SConsEnvironment"):
         env["CXX"] = mingw_bin_prefix + "clang++"
         if try_cmd("as --version", env["mingw_prefix"], env["arch"]):
             env["AS"] = mingw_bin_prefix + "as"
+            env.Append(ASFLAGS=["-c"])
         if try_cmd("ar --version", env["mingw_prefix"], env["arch"]):
             env["AR"] = mingw_bin_prefix + "ar"
         if try_cmd("ranlib --version", env["mingw_prefix"], env["arch"]):
@@ -750,7 +787,7 @@ def configure_mingw(env: "SConsEnvironment"):
         env.Append(LIBS=["dxgi", "dxguid"])
 
         # PIX
-        if not env["arch"] in ["x86_64", "arm64"] or env["pix_path"] == "" or not os.path.exists(env["pix_path"]):
+        if env["arch"] not in ["x86_64", "arm64"] or env["pix_path"] == "" or not os.path.exists(env["pix_path"]):
             env["use_pix"] = False
 
         if env["use_pix"]:

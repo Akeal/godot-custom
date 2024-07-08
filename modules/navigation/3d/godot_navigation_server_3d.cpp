@@ -136,7 +136,7 @@ bool GodotNavigationServer3D::map_is_active(RID p_map) const {
 	NavMap *map = map_owner.get_or_null(p_map);
 	ERR_FAIL_NULL_V(map, false);
 
-	return active_maps.find(map) >= 0;
+	return active_maps.has(map);
 }
 
 COMMAND_2(map_set_up, RID, p_map, Vector3, p_up) {
@@ -486,7 +486,7 @@ COMMAND_2(region_set_navigation_mesh, RID, p_region, Ref<NavigationMesh>, p_navi
 	NavRegion *region = region_owner.get_or_null(p_region);
 	ERR_FAIL_NULL(region);
 
-	region->set_mesh(p_navigation_mesh);
+	region->set_navigation_mesh(p_navigation_mesh);
 }
 
 #ifndef DISABLE_DEPRECATED
