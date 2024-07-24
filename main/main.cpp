@@ -193,6 +193,7 @@ static OS::ProcessID editor_pid = 0;
 static bool found_project = false;
 static bool auto_build_solutions = false;
 static String debug_server_uri;
+static bool wait_for_import = false;
 #ifndef DISABLE_DEPRECATED
 static int converter_max_kb_file = 4 * 1024; // 4MB
 static int converter_max_line_length = 100000;
@@ -1435,16 +1436,17 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 				OS::get_singleton()->print("Missing file to load argument after --validate-extension-api, aborting.");
 				goto error;
 			}
-
-		} else if (I->get() == "--export-release" || I->get() == "--export-debug" ||
-				I->get() == "--export-pack") { // Export project
+		} else if (arg == "--import") {
+			editor = true;
+			cmdline_tool = true;
+			wait_for_import = true;
+			quit_after = 1;
+		} else if (arg == "--export-release" || arg == "--export-debug" ||
+				arg == "--export-pack") { // Export project
 			// Actually handling is done in start().
 			editor = true;
 			cmdline_tool = true;
-<<<<<<< HEAD
 			wait_for_import = true;
-=======
->>>>>>> d12ba6d996 (post_process and build)
 			main_args.push_back(I->get());
 #ifndef DISABLE_DEPRECATED
 		} else if (arg == "--export") { // For users used to 3.x syntax.
