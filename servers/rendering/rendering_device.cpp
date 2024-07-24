@@ -6739,14 +6739,6 @@ RID RenderingDevice::_shader_create_from_spirv(const Ref<RDShaderSPIRV> &p_spirv
 	return shader_create_from_spirv(stage_data);
 }
 
-void RenderingDevice::_uniform_set_update_shared(UniformSet *p_uniform_set) {
-	for (UniformSet::SharedTexture shared : p_uniform_set->shared_textures_to_update) {
-		Texture *texture = texture_owner.get_or_null(shared.texture);
-		ERR_CONTINUE(texture == nullptr);
-		_texture_update_shared_fallback(shared.texture, texture, shared.writing);
-	}
-}
-
 RID RenderingDevice::_uniform_set_create(const TypedArray<RDUniform> &p_uniforms, RID p_shader, uint32_t p_shader_set) {
 	Vector<Uniform> uniforms;
 	uniforms.resize(p_uniforms.size());
