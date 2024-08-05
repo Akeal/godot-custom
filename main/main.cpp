@@ -194,7 +194,6 @@ static bool found_project = false;
 static bool auto_build_solutions = false;
 static bool wait_for_import = false;
 static String debug_server_uri;
-static bool wait_for_import = false;
 #ifndef DISABLE_DEPRECATED
 static int converter_max_kb_file = 4 * 1024; // 4MB
 static int converter_max_line_length = 100000;
