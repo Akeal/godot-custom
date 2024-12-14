@@ -105,7 +105,7 @@ Error OS_Web::execute(const String &p_path, const List<String> &p_arguments, Str
 	return create_process(p_path, p_arguments);
 }
 
-Dictionary OS_Web::execute_with_pipe(const String &p_path, const List<String> &p_arguments) {
+Dictionary OS_Web::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking) {
 	ERR_FAIL_V_MSG(Dictionary(), "OS::execute_with_pipe is not available on the Web platform.");
 }
 
@@ -275,6 +275,7 @@ OS_Web::OS_Web() {
 
 	if (AudioDriverWeb::is_available()) {
 		audio_drivers.push_back(memnew(AudioDriverWorklet));
+		audio_drivers.push_back(memnew(AudioDriverScriptProcessor));
 	}
 	for (AudioDriverWeb *audio_driver : audio_drivers) {
 		AudioDriverManager::add_driver(audio_driver);

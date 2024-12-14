@@ -181,6 +181,14 @@
 				[/codeblocks]
 			</description>
 		</method>
+		<method name="get_connection_count">
+			<return type="int" />
+			<param index="0" name="from_node" type="StringName" />
+			<param index="1" name="from_port" type="int" />
+			<description>
+				Returns the number of connections from [param from_port] of [param from_node].
+			</description>
+		</method>
 		<method name="get_connection_line" qualifiers="const">
 			<return type="PackedVector2Array" />
 			<param index="0" name="from_node" type="Vector2" />
@@ -397,6 +405,11 @@
 		<signal name="copy_nodes_request">
 			<description>
 				Emitted when this [GraphEdit] captures a [code]ui_copy[/code] action ([kbd]Ctrl + C[/kbd] by default). In general, this signal indicates that the selected [GraphElement]s should be copied.
+			</description>
+		</signal>
+		<signal name="cut_nodes_request">
+			<description>
+				Emitted when this [GraphEdit] captures a [code]ui_cut[/code] action ([kbd]Ctrl + X[/kbd] by default). In general, this signal indicates that the selected [GraphElement]s should be cut.
 			</description>
 		</signal>
 		<signal name="delete_nodes_request">

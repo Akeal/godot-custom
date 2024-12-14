@@ -128,7 +128,7 @@ private:
 			h = hash_murmur3_one_32(p_val.layers, h);
 			h = hash_murmur3_one_32(p_val.mipmap, h);
 			h = hash_murmur3_one_32(p_val.mipmaps, h);
-			h = hash_murmur3_one_32(p_val.texture_view.format_override);
+			h = hash_murmur3_one_32(p_val.texture_view.format_override, h);
 			h = hash_murmur3_one_32(p_val.texture_view.swizzle_r, h);
 			h = hash_murmur3_one_32(p_val.texture_view.swizzle_g, h);
 			h = hash_murmur3_one_32(p_val.texture_view.swizzle_b, h);
@@ -178,6 +178,7 @@ public:
 
 	// info from our renderer
 	void set_can_be_storage(const bool p_can_be_storage) { can_be_storage = p_can_be_storage; }
+	bool get_can_be_storage() const { return can_be_storage; }
 	void set_max_cluster_elements(const uint32_t p_max_elements) { max_cluster_elements = p_max_elements; }
 	uint32_t get_max_cluster_elements() { return max_cluster_elements; }
 	void set_base_data_format(const RD::DataFormat p_base_data_format) { base_data_format = p_base_data_format; }
@@ -194,7 +195,7 @@ public:
 	// Named Textures
 
 	bool has_texture(const StringName &p_context, const StringName &p_texture_name) const;
-	RID create_texture(const StringName &p_context, const StringName &p_texture_name, const RD::DataFormat p_data_format, const uint32_t p_usage_bits, const RD::TextureSamples p_texture_samples = RD::TEXTURE_SAMPLES_1, const Size2i p_size = Size2i(0, 0), const uint32_t p_layers = 0, const uint32_t p_mipmaps = 1, bool p_unique = true);
+	RID create_texture(const StringName &p_context, const StringName &p_texture_name, const RD::DataFormat p_data_format, const uint32_t p_usage_bits, const RD::TextureSamples p_texture_samples = RD::TEXTURE_SAMPLES_1, const Size2i p_size = Size2i(0, 0), const uint32_t p_layers = 0, const uint32_t p_mipmaps = 1, bool p_unique = true, bool p_discardable = false);
 	RID create_texture_from_format(const StringName &p_context, const StringName &p_texture_name, const RD::TextureFormat &p_texture_format, RD::TextureView p_view = RD::TextureView(), bool p_unique = true);
 	RID create_texture_view(const StringName &p_context, const StringName &p_texture_name, const StringName &p_view_name, RD::TextureView p_view = RD::TextureView());
 	RID get_texture(const StringName &p_context, const StringName &p_texture_name) const;
@@ -305,6 +306,30 @@ public:
 		return samplers;
 	}
 
+	_FORCE_INLINE_ static RD::TextureSamples msaa_to_samples(RS::ViewportMSAA p_msaa) {
+		switch (p_msaa) {
+			case RS::VIEWPORT_MSAA_DISABLED:
+				return RD::TEXTURE_SAMPLES_1;
+			case RS::VIEWPORT_MSAA_2X:
+				return RD::TEXTURE_SAMPLES_2;
+			case RS::VIEWPORT_MSAA_4X:
+				return RD::TEXTURE_SAMPLES_4;
+			case RS::VIEWPORT_MSAA_8X:
+				return RD::TEXTURE_SAMPLES_8;
+			default:
+				DEV_ASSERT(false && "Unknown MSAA option.");
+				return RD::TEXTURE_SAMPLES_1;
+		}
+	}
+
+	static uint32_t get_color_usage_bits(bool p_resolve, bool p_msaa, bool p_storage);
+	static RD::DataFormat get_depth_format(bool p_resolve, bool p_msaa, bool p_storage);
+	static uint32_t get_depth_usage_bits(bool p_resolve, bool p_msaa, bool p_storage);
+	static RD::DataFormat get_velocity_format();
+	static uint32_t get_velocity_usage_bits(bool p_resolve, bool p_msaa, bool p_storage);
+	static RD::DataFormat get_vrs_format();
+	static uint32_t get_vrs_usage_bits();
+
 private:
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Our classDB doesn't support calling our normal exposed functions
@@ -397,6 +422,8 @@ private:
 	RID _get_depth_layer_compat_80214(const uint32_t p_layer);
 	RID _get_velocity_texture_compat_80214();
 	RID _get_velocity_layer_compat_80214(const uint32_t p_layer);
+
+	RID _create_texture_bind_compat_98670(const StringName &p_context, const StringName &p_texture_name, const RD::DataFormat p_data_format, const uint32_t p_usage_bits, const RD::TextureSamples p_texture_samples, const Size2i p_size, const uint32_t p_layers, const uint32_t p_mipmaps, bool p_unique);
 
 	static void _bind_compatibility_methods();
 

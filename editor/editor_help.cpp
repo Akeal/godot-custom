@@ -39,6 +39,7 @@
 #include "core/string/string_builder.h"
 #include "core/version_generated.gen.h"
 #include "editor/doc_data_compressed.gen.h"
+#include "editor/editor_main_screen.h"
 #include "editor/editor_node.h"
 #include "editor/editor_paths.h"
 #include "editor/editor_property_name_processor.h"
@@ -147,7 +148,7 @@ static String _contextualize_class_specifier(const String &p_class_specifier, co
 
 	// Here equal length + begins_with from above implies p_class_specifier == p_edited_class :)
 	if (p_class_specifier.length() == p_edited_class.length()) {
-		int rfind = p_class_specifier.rfind(".");
+		int rfind = p_class_specifier.rfind_char('.');
 		if (rfind == -1) { // Single identifier
 			return p_class_specifier;
 		}
@@ -233,7 +234,7 @@ void EditorHelp::_class_desc_select(const String &p_select) {
 			enum_class_name = "@GlobalScope";
 			enum_name = link;
 		} else {
-			const int dot_pos = link.rfind(".");
+			const int dot_pos = link.rfind_char('.');
 			if (dot_pos >= 0) {
 				enum_class_name = link.left(dot_pos);
 				enum_name = link.substr(dot_pos + 1);
@@ -288,7 +289,7 @@ void EditorHelp::_class_desc_select(const String &p_select) {
 		// Case order is important here to correctly handle edge cases like Variant.Type in @GlobalScope.
 		if (table->has(link)) {
 			// Found in the current page.
-			if (class_desc->is_ready()) {
+			if (class_desc->is_finished()) {
 				emit_signal(SNAME("request_save_history"));
 				class_desc->scroll_to_paragraph((*table)[link]);
 			} else {
@@ -319,7 +320,7 @@ void EditorHelp::_class_desc_select(const String &p_select) {
 				}
 			}
 
-			if (link.contains(".")) {
+			if (link.contains_char('.')) {
 				const int class_end = link.find_char('.');
 				emit_signal(SNAME("go_to_help"), topic + ":" + link.left(class_end) + ":" + link.substr(class_end + 1));
 			}
@@ -364,7 +365,7 @@ static void _add_type_to_rt(const String &p_type, const String &p_enum, bool p_i
 
 	bool is_enum_type = !p_enum.is_empty();
 	bool is_bitfield = p_is_bitfield && is_enum_type;
-	bool can_ref = !p_type.contains("*") || is_enum_type;
+	bool can_ref = !p_type.contains_char('*') || is_enum_type;
 
 	String link_t = p_type; // For links in metadata
 	String display_t; // For display purposes.
@@ -376,10 +377,10 @@ static void _add_type_to_rt(const String &p_type, const String &p_enum, bool p_i
 	}
 
 	p_rt->push_color(type_color);
-	bool add_array = false;
+	bool add_typed_container = false;
 	if (can_ref) {
 		if (link_t.ends_with("[]")) {
-			add_array = true;
+			add_typed_container = true;
 			link_t = link_t.trim_suffix("[]");
 			display_t = display_t.trim_suffix("[]");
 
@@ -387,6 +388,22 @@ static void _add_type_to_rt(const String &p_type, const String &p_enum, bool p_i
 			p_rt->add_text("Array");
 			p_rt->pop(); // meta
 			p_rt->add_text("[");
+		} else if (link_t.begins_with("Dictionary[")) {
+			add_typed_container = true;
+			link_t = link_t.trim_prefix("Dictionary[").trim_suffix("]");
+			display_t = display_t.trim_prefix("Dictionary[").trim_suffix("]");
+
+			p_rt->push_meta("#Dictionary", RichTextLabel::META_UNDERLINE_ON_HOVER); // class
+			p_rt->add_text("Dictionary");
+			p_rt->pop(); // meta
+			p_rt->add_text("[");
+			p_rt->push_meta("#" + link_t.get_slice(", ", 0), RichTextLabel::META_UNDERLINE_ON_HOVER); // class
+			p_rt->add_text(_contextualize_class_specifier(display_t.get_slice(", ", 0), p_class));
+			p_rt->pop(); // meta
+			p_rt->add_text(", ");
+
+			link_t = link_t.get_slice(", ", 1);
+			display_t = _contextualize_class_specifier(display_t.get_slice(", ", 1), p_class);
 		} else if (is_bitfield) {
 			p_rt->push_color(Color(type_color, 0.5));
 			p_rt->push_hint(TTR("This value is an integer composed as a bitmask of the following flags."));
@@ -405,7 +422,7 @@ static void _add_type_to_rt(const String &p_type, const String &p_enum, bool p_i
 	p_rt->add_text(display_t);
 	if (can_ref) {
 		p_rt->pop(); // meta
-		if (add_array) {
+		if (add_typed_container) {
 			p_rt->add_text("]");
 		} else if (is_bitfield) {
 			p_rt->push_color(Color(type_color, 0.5));
@@ -1456,10 +1473,31 @@ void EditorHelp::_update_doc() {
 			_push_normal_font();
 			class_desc->push_color(theme_cache.comment_color);
 
+			bool has_prev_text = false;
+
+			if (theme_item.is_deprecated) {
+				has_prev_text = true;
+				DEPRECATED_DOC_MSG(HANDLE_DOC(theme_item.deprecated_message), TTR("This theme property may be changed or removed in future versions."));
+			}
+
+			if (theme_item.is_experimental) {
+				if (has_prev_text) {
+					class_desc->add_newline();
+					class_desc->add_newline();
+				}
+				has_prev_text = true;
+				EXPERIMENTAL_DOC_MSG(HANDLE_DOC(theme_item.experimental_message), TTR("This theme property may be changed or removed in future versions."));
+			}
+
 			const String descr = HANDLE_DOC(theme_item.description);
 			if (!descr.is_empty()) {
+				if (has_prev_text) {
+					class_desc->add_newline();
+					class_desc->add_newline();
+				}
+				has_prev_text = true;
 				_add_text(descr);
-			} else {
+			} else if (!has_prev_text) {
 				class_desc->add_image(get_editor_theme_icon(SNAME("Error")));
 				class_desc->add_text(" ");
 				class_desc->push_color(theme_cache.comment_color);
@@ -2220,12 +2258,6 @@ void EditorHelp::_update_doc() {
 				}
 				has_prev_text = true;
 				_add_text(descr);
-				// Add copy note to built-in properties returning Packed*Array.
-				if (!cd.is_script_doc && packed_array_types.has(prop.type)) {
-					class_desc->add_newline();
-					class_desc->add_newline();
-					_add_text(vformat(TTR("[b]Note:[/b] The returned array is [i]copied[/i] and any changes to it will not update the original property value. See [%s] for more details."), prop.type));
-				}
 			} else if (!has_prev_text) {
 				class_desc->add_image(get_editor_theme_icon(SNAME("Error")));
 				class_desc->add_text(" ");
@@ -2236,6 +2268,13 @@ void EditorHelp::_update_doc() {
 					class_desc->append_text(TTR("There is currently no description for this property. Please help us by [color=$color][url=$url]contributing one[/url][/color]!").replace("$url", CONTRIBUTE_URL).replace("$color", link_color_text));
 				}
 				class_desc->pop(); // color
+			}
+
+			// Add copy note to built-in properties returning `Packed*Array`.
+			if (!cd.is_script_doc && packed_array_types.has(prop.type)) {
+				class_desc->add_newline();
+				class_desc->add_newline();
+				_add_text(vformat(TTR("[b]Note:[/b] The returned array is [i]copied[/i] and any changes to it will not update the original property value. See [%s] for more details."), prop.type));
 			}
 
 			class_desc->pop(); // color
@@ -2272,7 +2311,7 @@ void EditorHelp::_update_doc() {
 void EditorHelp::_request_help(const String &p_string) {
 	Error err = _goto_desc(p_string);
 	if (err == OK) {
-		EditorNode::get_singleton()->set_visible_editor(EditorNode::EDITOR_SCRIPT);
+		EditorNode::get_singleton()->get_editor_main_screen()->select(EditorMainScreen::EDITOR_SCRIPT);
 	}
 }
 
@@ -2338,12 +2377,8 @@ void EditorHelp::_help_callback(const String &p_topic) {
 		}
 	}
 
-	if (class_desc->is_ready()) {
-		// call_deferred() is not enough.
-		if (class_desc->is_connected(SceneStringName(draw), callable_mp(class_desc, &RichTextLabel::scroll_to_paragraph))) {
-			class_desc->disconnect(SceneStringName(draw), callable_mp(class_desc, &RichTextLabel::scroll_to_paragraph));
-		}
-		class_desc->connect(SceneStringName(draw), callable_mp(class_desc, &RichTextLabel::scroll_to_paragraph).bind(line), CONNECT_ONE_SHOT | CONNECT_DEFERRED);
+	if (class_desc->is_finished()) {
+		class_desc->scroll_to_paragraph(line);
 	} else {
 		scroll_to = line;
 	}
@@ -2368,6 +2403,7 @@ static void _add_text_to_rt(const String &p_bbcode, RichTextLabel *p_rt, const C
 	const Ref<Font> doc_code_font = p_owner_node->get_theme_font(SNAME("doc_source"), EditorStringName(EditorFonts));
 	const Ref<Font> doc_kbd_font = p_owner_node->get_theme_font(SNAME("doc_keyboard"), EditorStringName(EditorFonts));
 
+	const int doc_font_size = p_owner_node->get_theme_font_size(SNAME("doc_size"), EditorStringName(EditorFonts));
 	const int doc_code_font_size = p_owner_node->get_theme_font_size(SNAME("doc_source_size"), EditorStringName(EditorFonts));
 	const int doc_kbd_font_size = p_owner_node->get_theme_font_size(SNAME("doc_keyboard_size"), EditorStringName(EditorFonts));
 
@@ -2480,7 +2516,14 @@ static void _add_text_to_rt(const String &p_bbcode, RichTextLabel *p_rt, const C
 
 			tag_stack.pop_front();
 			pos = brk_end + 1;
-			if (tag != "/img") {
+			if (tag == "/img") {
+				// Nothing to do.
+			} else if (tag == "/url") {
+				p_rt->pop(); // meta
+				p_rt->pop(); // color
+				p_rt->add_text(" ");
+				p_rt->add_image(p_owner_node->get_editor_theme_icon(SNAME("ExternalLink")), 0, doc_font_size, link_color);
+			} else {
 				p_rt->pop();
 			}
 		} else if (tag.begins_with("method ") || tag.begins_with("constructor ") || tag.begins_with("operator ") || tag.begins_with("member ") || tag.begins_with("signal ") || tag.begins_with("enum ") || tag.begins_with("constant ") || tag.begins_with("annotation ") || tag.begins_with("theme_item ")) {
@@ -2509,7 +2552,7 @@ static void _add_text_to_rt(const String &p_bbcode, RichTextLabel *p_rt, const C
 			p_rt->push_meta("@" + link_tag + " " + link_target, underline_mode);
 
 			if (link_tag == "member" &&
-					((!link_target.contains(".") && (p_class == "ProjectSettings" || p_class == "EditorSettings")) ||
+					((!link_target.contains_char('.') && (p_class == "ProjectSettings" || p_class == "EditorSettings")) ||
 							link_target.begins_with("ProjectSettings.") || link_target.begins_with("EditorSettings."))) {
 				// Special formatting for both ProjectSettings and EditorSettings.
 				String prefix;
@@ -2748,19 +2791,20 @@ static void _add_text_to_rt(const String &p_bbcode, RichTextLabel *p_rt, const C
 		} else if (tag == "rb") {
 			p_rt->add_text("]");
 			pos = brk_end + 1;
-		} else if (tag == "url") {
-			int end = bbcode.find_char('[', brk_end);
-			if (end == -1) {
-				end = bbcode.length();
+		} else if (tag == "url" || tag.begins_with("url=")) {
+			String url;
+			if (tag.begins_with("url=")) {
+				url = tag.substr(4);
+			} else {
+				int end = bbcode.find_char('[', brk_end);
+				if (end == -1) {
+					end = bbcode.length();
+				}
+				url = bbcode.substr(brk_end + 1, end - brk_end - 1);
 			}
-			String url = bbcode.substr(brk_end + 1, end - brk_end - 1);
-			p_rt->push_meta(url);
 
-			pos = brk_end + 1;
-			tag_stack.push_front(tag);
-		} else if (tag.begins_with("url=")) {
-			String url = tag.substr(4);
-			p_rt->push_meta(url);
+			p_rt->push_color(link_color);
+			p_rt->push_meta(url, RichTextLabel::META_UNDERLINE_ON_HOVER, url + "\n\n" + TTR("Click to open in browser."));
 
 			pos = brk_end + 1;
 			tag_stack.push_front("url");
@@ -3024,6 +3068,7 @@ void EditorHelp::update_doc() {
 void EditorHelp::cleanup_doc() {
 	_wait_for_thread();
 	memdelete(doc);
+	doc = nullptr;
 }
 
 Vector<Pair<String, int>> EditorHelp::get_sections() {
@@ -3039,7 +3084,7 @@ Vector<Pair<String, int>> EditorHelp::get_sections() {
 void EditorHelp::scroll_to_section(int p_section_index) {
 	_wait_for_thread();
 	int line = section_line[p_section_index].second;
-	if (class_desc->is_ready()) {
+	if (class_desc->is_finished()) {
 		class_desc->scroll_to_paragraph(line);
 	} else {
 		scroll_to = line;
@@ -3069,9 +3114,9 @@ void EditorHelp::set_scroll(int p_scroll) {
 
 void EditorHelp::update_toggle_scripts_button() {
 	if (is_layout_rtl()) {
-		toggle_scripts_button->set_icon(get_editor_theme_icon(ScriptEditor::get_singleton()->is_scripts_panel_toggled() ? SNAME("Forward") : SNAME("Back")));
+		toggle_scripts_button->set_button_icon(get_editor_theme_icon(ScriptEditor::get_singleton()->is_scripts_panel_toggled() ? SNAME("Forward") : SNAME("Back")));
 	} else {
-		toggle_scripts_button->set_icon(get_editor_theme_icon(ScriptEditor::get_singleton()->is_scripts_panel_toggled() ? SNAME("Back") : SNAME("Forward")));
+		toggle_scripts_button->set_button_icon(get_editor_theme_icon(ScriptEditor::get_singleton()->is_scripts_panel_toggled() ? SNAME("Back") : SNAME("Forward")));
 	}
 	toggle_scripts_button->set_tooltip_text(vformat("%s (%s)", TTR("Toggle Scripts Panel"), ED_GET_SHORTCUT("script_editor/toggle_scripts_panel")->get_as_text()));
 }
@@ -3093,8 +3138,6 @@ void EditorHelp::init_gdext_pointers() {
 
 EditorHelp::EditorHelp() {
 	set_custom_minimum_size(Size2(150 * EDSCALE, 0));
-
-	EDITOR_DEF("text_editor/help/sort_functions_alphabetically", true);
 
 	class_desc = memnew(RichTextLabel);
 	class_desc->set_tab_size(8);
@@ -3214,7 +3257,7 @@ EditorHelpBit::HelpData EditorHelpBit::_get_property_help_data(const StringName 
 				enum_class_name = "@GlobalScope";
 				enum_name = property.enumeration;
 			} else {
-				const int dot_pos = property.enumeration.rfind(".");
+				const int dot_pos = property.enumeration.rfind_char('.');
 				if (dot_pos >= 0) {
 					enum_class_name = property.enumeration.left(dot_pos);
 					enum_name = property.enumeration.substr(dot_pos + 1);
@@ -3379,6 +3422,20 @@ EditorHelpBit::HelpData EditorHelpBit::_get_theme_item_help_data(const StringNam
 		for (const DocData::ThemeItemDoc &theme_item : E->value.theme_properties) {
 			HelpData current;
 			current.description = HANDLE_DOC(theme_item.description);
+			if (theme_item.is_deprecated) {
+				if (theme_item.deprecated_message.is_empty()) {
+					current.deprecated_message = TTR("This theme property may be changed or removed in future versions.");
+				} else {
+					current.deprecated_message = HANDLE_DOC(theme_item.deprecated_message);
+				}
+			}
+			if (theme_item.is_experimental) {
+				if (theme_item.experimental_message.is_empty()) {
+					current.experimental_message = TTR("This theme property may be changed or removed in future versions.");
+				} else {
+					current.experimental_message = HANDLE_DOC(theme_item.experimental_message);
+				}
+			}
 
 			if (theme_item.name == p_theme_item_name) {
 				result = current;
@@ -3552,7 +3609,7 @@ void EditorHelpBit::_update_labels() {
 }
 
 void EditorHelpBit::_go_to_help(const String &p_what) {
-	EditorNode::get_singleton()->set_visible_editor(EditorNode::EDITOR_SCRIPT);
+	EditorNode::get_singleton()->get_editor_main_screen()->select(EditorMainScreen::EDITOR_SCRIPT);
 	ScriptEditor::get_singleton()->goto_help(p_what);
 	emit_signal(SNAME("request_hide"));
 }
@@ -3567,7 +3624,7 @@ void EditorHelpBit::_meta_clicked(const String &p_select) {
 			enum_class_name = "@GlobalScope";
 			enum_name = link;
 		} else {
-			const int dot_pos = link.rfind(".");
+			const int dot_pos = link.rfind_char('.');
 			if (dot_pos >= 0) {
 				enum_class_name = link.left(dot_pos);
 				enum_name = link.substr(dot_pos + 1);
@@ -3608,7 +3665,7 @@ void EditorHelpBit::_meta_clicked(const String &p_select) {
 			return;
 		}
 
-		if (link.contains(".")) {
+		if (link.contains_char('.')) {
 			const int class_end = link.find_char('.');
 			_go_to_help(topic + ":" + link.left(class_end) + ":" + link.substr(class_end + 1));
 		} else {
@@ -3816,7 +3873,7 @@ void EditorHelpBitTooltip::show_tooltip(EditorHelpBit *p_help_bit, Control *p_ta
 	EditorHelpBitTooltip *tooltip = memnew(EditorHelpBitTooltip(p_target));
 	p_help_bit->connect("request_hide", callable_mp(tooltip, &EditorHelpBitTooltip::_safe_queue_free));
 	tooltip->add_child(p_help_bit);
-	p_target->get_viewport()->add_child(tooltip);
+	p_target->add_child(tooltip);
 	p_help_bit->update_content_height();
 	tooltip->popup_under_cursor();
 }
@@ -4051,7 +4108,7 @@ FindBar::FindBar() {
 	search_text->set_custom_minimum_size(Size2(100 * EDSCALE, 0));
 	search_text->set_h_size_flags(SIZE_EXPAND_FILL);
 	search_text->connect(SceneStringName(text_changed), callable_mp(this, &FindBar::_search_text_changed));
-	search_text->connect("text_submitted", callable_mp(this, &FindBar::_search_text_submitted));
+	search_text->connect(SceneStringName(text_submitted), callable_mp(this, &FindBar::_search_text_submitted));
 
 	matches_label = memnew(Label);
 	add_child(matches_label);
@@ -4101,8 +4158,8 @@ void FindBar::popup_search() {
 void FindBar::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_THEME_CHANGED: {
-			find_prev->set_icon(get_editor_theme_icon(SNAME("MoveUp")));
-			find_next->set_icon(get_editor_theme_icon(SNAME("MoveDown")));
+			find_prev->set_button_icon(get_editor_theme_icon(SNAME("MoveUp")));
+			find_next->set_button_icon(get_editor_theme_icon(SNAME("MoveDown")));
 			hide_button->set_texture_normal(get_editor_theme_icon(SNAME("Close")));
 			hide_button->set_texture_hover(get_editor_theme_icon(SNAME("Close")));
 			hide_button->set_texture_pressed(get_editor_theme_icon(SNAME("Close")));
