@@ -529,8 +529,6 @@ void SceneTree::iteration_prepare() {
 }
 
 bool SceneTree::physics_process(double p_time) {
-	root_lock++;
-
 	current_frame++;
 
 	flush_transform_notifications();
@@ -554,7 +552,6 @@ bool SceneTree::physics_process(double p_time) {
 	process_tweens(p_time, true);
 
 	flush_transform_notifications();
-	root_lock--;
 
 	_flush_delete_queue();
 	_call_idle_callbacks();
@@ -571,8 +568,6 @@ void SceneTree::iteration_end() {
 }
 
 bool SceneTree::process(double p_time) {
-	root_lock++;
-
 	if (MainLoop::process(p_time)) {
 		_quit = true;
 	}
@@ -597,8 +592,6 @@ bool SceneTree::process(double p_time) {
 	_flush_ugc();
 	MessageQueue::get_singleton()->flush(); //small little hack
 	flush_transform_notifications(); //transforms after world update, to avoid unnecessary enter/exit notifications
-
-	root_lock--;
 
 	_flush_delete_queue();
 
@@ -662,8 +655,6 @@ bool SceneTree::process(double p_time) {
 }
 
 bool SceneTree::post_process(double p_time) {
-		root_lock++;
-	
 		if (MainLoop::post_process(p_time)) {
 			_quit = true;
 		}
@@ -681,8 +672,6 @@ bool SceneTree::post_process(double p_time) {
 		_flush_ugc();
 		MessageQueue::get_singleton()->flush(); //small little hack
 		//flush_transform_notifications(); //transforms after world update, to avoid unnecessary enter/exit notifications
-	
-		root_lock--;
 	
 		_flush_delete_queue();
 	

@@ -2171,10 +2171,6 @@ void RenderForwardMobile::_render_list_template(RenderingDevice::DrawListID p_dr
 		pipeline_specialization.multimesh_has_color = bool(inst->flags_cache & INSTANCE_DATA_FLAG_MULTIMESH_HAS_COLOR);
 		pipeline_specialization.multimesh_has_custom_data = bool(inst->flags_cache & INSTANCE_DATA_FLAG_MULTIMESH_HAS_CUSTOM_DATA);
 
-		if (bool(inst->flags_cache & INSTANCE_DATA_FLAG_MULTIMESH)) {
-			base_spec_constants |= 1 << SPEC_CONSTANT_IS_MULTIMESH;
-		}
-
 		SceneState::PushConstant push_constant;
 		push_constant.base_index = i + p_params->element_offset;
 

@@ -6434,24 +6434,6 @@ void EditorNode::_remove_all_not_owned_children(Node *p_node, Node *p_owner) {
 		node->get_parent()->remove_child(node);
 		node->queue_free();
 	}
-
-	scenes_modification_table.clear();
-}
-
-void EditorNode::_remove_all_not_owned_children(Node *p_node, Node *p_owner) {
-	Vector<Node *> nodes_to_remove;
-	if (p_node != p_owner && p_node->get_owner() != p_owner) {
-		nodes_to_remove.push_back(p_node);
-	}
-	for (int i = 0; i < p_node->get_child_count(); i++) {
-		Node *child_node = p_node->get_child(i);
-		_remove_all_not_owned_children(child_node, p_owner);
-	}
-
-	for (Node *node : nodes_to_remove) {
-		node->get_parent()->remove_child(node);
-		node->queue_free();
-	}
 }
 
 int EditorNode::plugin_init_callback_count = 0;

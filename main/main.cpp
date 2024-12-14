@@ -200,6 +200,7 @@ static OS::ProcessID editor_pid = 0;
 #ifdef TOOLS_ENABLED
 static bool found_project = false;
 static bool auto_build_solutions = false;
+static String debug_server_uri;
 static bool wait_for_import = false;
 static bool restore_editor_window_layout = true;
 #ifndef DISABLE_DEPRECATED

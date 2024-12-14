@@ -644,7 +644,6 @@ void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, i
 
 	ct->max_depth = max_depth;
 	ct->depth_base_position = depth_base_position;
-	ct->clear_sets();
 }
 
 void TextureStorage::canvas_texture_set_texture_filter(RID p_canvas_texture, RS::CanvasItemTextureFilter p_filter) {

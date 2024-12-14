@@ -3326,14 +3326,6 @@ RID RenderingDevice::uniform_buffer_create(uint32_t p_size_bytes, const Vector<u
 	return id;
 }
 
-void RenderingDevice::_uniform_set_update_shared(UniformSet *p_uniform_set) {
-	for (UniformSet::SharedTexture shared : p_uniform_set->shared_textures_to_update) {
-		Texture *texture = texture_owner.get_or_null(shared.texture);
-		ERR_CONTINUE(texture == nullptr);
-		_texture_update_shared_fallback(shared.texture, texture, shared.writing);
-	}
-}
-
 template RID RenderingDevice::uniform_set_create(const LocalVector<RD::Uniform> &p_uniforms, RID p_shader, uint32_t p_shader_set, bool p_linear_pool);
 
 template RID RenderingDevice::uniform_set_create(const Vector<RD::Uniform> &p_uniforms, RID p_shader, uint32_t p_shader_set, bool p_linear_pool);
