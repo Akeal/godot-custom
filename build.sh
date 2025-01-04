@@ -11,34 +11,62 @@ done
 
 scriptPath=$(realpath .)
 # Assumes nuget.exe exists somewhere under /usr
-nugetPath=$(eval "find 2>/dev/null /usr -name nuget.exe")
-nugetConfigPath="~/.nuget/NuGet/NuGet.Config" # If it aint here, add logic to find it or update it yerself
-nugetSource="${scriptPath}/NugetSource"
-nugetSources=$(eval "mono ${nugetPath} sources list -ConfigFile ${nugetConfigPath}")
+nugetExePathCmd="find 2>/dev/null /usr -name nuget.exe"
+echo "Finding nuget.exe..."
+echo $nugetExePathCmd
+nugetExePath=$(eval $nugetExePathCmd)
+echo "Found ${nugetExePath}"
+#nugetConfigPath="${scriptPath}/nuget.config"
+nugetSource="${scriptPath}/bin/GodotSharp/Tools/nupkgs"
+nugetSourcesCmd="mono ${nugetExePath} sources list"
+# -ConfigFile ${nugetConfigPath}"
+#nugetSourcesCmd="dotnet nuget list source"
 
 build="scons platform=linuxbsd module_mono_enabled=yes"
 
 if "$clean" == "true"; then
   echo "Cleaning ..."
-  eval $"("${build} -c")"
-  $(eval $"rm -R ${scriptPath}/bin")
+  eval $("${build} -c")
+  eval $($"rm -R ${scriptPath}/bin")
 fi
 
 echo "Building..."
-eval $"("${build}")"
+echo $build
+eval $build
 
 echo "Generating glue..."
-$(eval $"${scriptPath}/bin/godot.linuxbsd.editor.x86_64.mono --generate-mono-glue ${scriptPath}/modules/mono/glue") 
+glueCmd=$"${scriptPath}/bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue ${scriptPath}/modules/mono/glue"
+echo $glueCmd
+eval $glueCmd
+
 
 echo "Building managed libraries..."
-$(eval $"${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=${scriptPath}/bin")
+buildManagedLibraries=$"${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=${scriptPath}/bin"
+# --push-nupkgs-local GodotCppNugetSource"
+echo $buildManagedLibraries
+eval $buildManagedLibraries
+
+echo "Checking current nuget sources..."
+echo $nugetSourcesCmd
+nugetSources=$(eval $nugetSourcesCmd)
 
 # Add or update nuget package
-if ! echo "${nugetSources}" | grep "${nugetSource}"; then
+echo "Checking nuget sources ..."
+echo $nugetSources
+echo "Looking for ${nugetSource}"
+if ! [[ $nugetSources =~ "${nugetSource}" ]]; then
   echo "Adding new NuGet Source..."
-  $(eval "dotnet nuget add source ${nugetSource} --name GodotCppNugetSource")
+#  nugetSourceCmd="dotnet nuget add source ${nugetSource} --name GodotCppNugetSource"
+  nugetSourceCmd="mono ${nugetExePath} sources add -name GodotCppNugetSource -source ${nugetSource}"
+# -ConfigFile ${nugetConfigPath}"
 else
   echo "Updating existing NuGetSource..."
-  echo "dotnet nuget update source ${nugetSource} --name GodotCppNugetSource"
-  $(eval "dotnet nuget update source ${nugetSource} --name GodotCppNugetSource")
+#  nugetSourceCmd="dotnet nuget update source GodotCppNugetSource"
+  nugetSourceCmd="mono ${nugetExePath} sources update -name GodotCppNugetSource"
+# -ConfigFile ${nugetConfigPath}"
 fi
+
+echo $nugetSourceCmd
+eval $nugetSourceCmd
+
+#$(eval "${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir ${scriptPath}/bin --push-nupkgs-local GodotCppNugetSource")
