@@ -3,8 +3,9 @@ clean="false"
 
 while (( $# >= 1 )); do 
     case $1 in
-    --clean) clean="true";;
-    *) break;
+      --clean) clean="true";;
+      --proj=*) proj="${1#*=}";;
+    *)
     esac;
     shift
 done
@@ -17,8 +18,11 @@ echo $nugetExePathCmd
 nugetExePath=$(eval $nugetExePathCmd)
 echo "Found ${nugetExePath}"
 #nugetConfigPath="${scriptPath}/nuget.config"
+
 nugetSource="${scriptPath}/bin/GodotSharp/Tools/nupkgs"
+
 nugetSourcesCmd="mono ${nugetExePath} sources list"
+
 # -ConfigFile ${nugetConfigPath}"
 #nugetSourcesCmd="dotnet nuget list source"
 
@@ -47,6 +51,12 @@ echo $buildManagedLibraries
 eval $buildManagedLibraries
 
 echo "Checking current nuget sources..."
+if [ -z ${proj+x} ]; then
+  echo "Project not specified. Using default nuget config."
+else
+  echo "Updating project path ${proj} with newly built nuget packages."
+  nugetSourcesCmd="${nugetSourcesCmd} -ConfigFile ${proj}/nuget.config"
+fi
 echo $nugetSourcesCmd
 nugetSources=$(eval $nugetSourcesCmd)
 
@@ -58,12 +68,19 @@ if ! [[ $nugetSources =~ "${nugetSource}" ]]; then
   echo "Adding new NuGet Source..."
 #  nugetSourceCmd="dotnet nuget add source ${nugetSource} --name GodotCppNugetSource"
   nugetSourceCmd="mono ${nugetExePath} sources add -name GodotCppNugetSource -source ${nugetSource}"
-# -ConfigFile ${nugetConfigPath}"
+# 
 else
   echo "Updating existing NuGetSource..."
 #  nugetSourceCmd="dotnet nuget update source GodotCppNugetSource"
   nugetSourceCmd="mono ${nugetExePath} sources update -name GodotCppNugetSource"
 # -ConfigFile ${nugetConfigPath}"
+fi
+
+if [ -z ${proj+x} ]; then
+  echo "Project not specified. Using default nuget config."
+else
+  echo "Updating project path ${proj} with newly built nuget packages."
+  nugetSourceCmd="${nugetSourceCmd} -ConfigFile ${proj}/nuget.config"
 fi
 
 echo $nugetSourceCmd
