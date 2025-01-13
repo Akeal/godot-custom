@@ -32,6 +32,7 @@
 
 #include "core/io/logger.h"
 #include "core/os/os.h"
+#include "core/string/print_string.h"
 #include "core/string/ustring.h"
 
 // Optional physics interpolation warnings try to include the path to the relevant node.
@@ -96,6 +97,8 @@ void _err_print_error(const char *p_function, const char *p_file, int p_line, co
 		const char *err_details = (p_message && *p_message) ? p_message : p_error;
 		fprintf(stderr, "ERROR: %s\n   at: %s (%s:%i)\n", err_details, p_function, p_file, p_line);
 	}
+
+	print_line_rich(vformat("[color=#d84c45]%s[/color]", p_message));
 
 	_global_lock();
 	ErrorHandlerList *l = error_handler_list;

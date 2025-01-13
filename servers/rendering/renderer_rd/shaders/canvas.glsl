@@ -20,7 +20,7 @@ layout(location = 7) in vec4 custom1_attrib;
 layout(location = 10) in uvec4 bone_attrib;
 layout(location = 11) in vec4 weight_attrib;
 
-#endif // USE_ATTRIBUTES
+#endif
 
 #include "canvas_uniforms_inc.glsl"
 
@@ -38,7 +38,7 @@ layout(location = 2) out vec2 vertex_interp;
 
 layout(location = 3) out vec2 pixel_size_interp;
 
-#endif // USE_NINEPATCH
+#endif
 
 #ifdef MATERIAL_UNIFORMS_USED
 /* clang-format off */
@@ -46,7 +46,7 @@ layout(set = 1, binding = 0, std140) uniform MaterialUniforms {
 #MATERIAL_UNIFORMS
 } material;
 /* clang-format on */
-#endif // MATERIAL_UNIFORMS_USED
+#endif
 
 #GLOBALS
 

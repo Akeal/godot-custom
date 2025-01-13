@@ -30,8 +30,8 @@ build="scons platform=linuxbsd module_mono_enabled=yes"
 
 if "$clean" == "true"; then
   echo "Cleaning ..."
-  eval $("${build} -c")
-  eval $($"rm -R ${scriptPath}/bin")
+  eval "${build} -c"
+  eval "rm -R ${scriptPath}/bin"
 fi
 
 echo "Building..."

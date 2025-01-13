@@ -3647,7 +3647,9 @@ RDD::ShaderID RenderingDeviceDriverVulkan::shader_create_from_bytecode(const Vec
 		read_offset += set_size;
 	}
 
-	ERR_FAIL_COND_V(read_offset + binary_data.specialization_constants_count * sizeof(ShaderBinary::SpecializationConstant) >= binsize, ShaderID());
+	//Mon changed
+	//ERR_FAIL_COND_V(read_offset + binary_data.specialization_constants_count * sizeof(ShaderBinary::SpecializationConstant) >= binsize, ShaderID());
+	ERR_FAIL_COND_V(read_offset + binary_data.specialization_constants_count * sizeof(ShaderBinary::SpecializationConstant) > binsize, ShaderID());
 
 	r_shader_desc.specialization_constants.resize(binary_data.specialization_constants_count);
 	for (uint32_t i = 0; i < binary_data.specialization_constants_count; i++) {
