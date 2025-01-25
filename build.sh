@@ -17,14 +17,12 @@ echo "Finding nuget.exe..."
 echo $nugetExePathCmd
 nugetExePath=$(eval $nugetExePathCmd)
 echo "Found ${nugetExePath}"
-#nugetConfigPath="${scriptPath}/nuget.config"
 
 nugetSource="${scriptPath}/bin/GodotSharp/Tools/nupkgs"
 
 nugetSourcesCmd="mono ${nugetExePath} sources list"
 
-# -ConfigFile ${nugetConfigPath}"
-#nugetSourcesCmd="dotnet nuget list source"
+monoGlueModulesPath="${scriptPath}/modules/mono/glue"
 
 build="scons platform=linuxbsd module_mono_enabled=yes"
 
@@ -39,14 +37,12 @@ echo $build
 eval $build
 
 echo "Generating glue..."
-glueCmd=$"${scriptPath}/bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue ${scriptPath}/modules/mono/glue"
+glueCmd="${scriptPath}/bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue ${monoGlueModulesPath}"
 echo $glueCmd
 eval $glueCmd
 
-
 echo "Building managed libraries..."
-buildManagedLibraries=$"${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=${scriptPath}/bin"
-# --push-nupkgs-local GodotCppNugetSource"
+buildManagedLibraries="${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=${scriptPath}/bin"
 echo $buildManagedLibraries
 eval $buildManagedLibraries
 
@@ -66,14 +62,10 @@ echo $nugetSources
 echo "Looking for ${nugetSource}"
 if ! [[ $nugetSources =~ "${nugetSource}" ]]; then
   echo "Adding new NuGet Source..."
-#  nugetSourceCmd="dotnet nuget add source ${nugetSource} --name GodotCppNugetSource"
   nugetSourceCmd="mono ${nugetExePath} sources add -name GodotCppNugetSource -source ${nugetSource}"
-# 
 else
   echo "Updating existing NuGetSource..."
-#  nugetSourceCmd="dotnet nuget update source GodotCppNugetSource"
   nugetSourceCmd="mono ${nugetExePath} sources update -name GodotCppNugetSource"
-# -ConfigFile ${nugetConfigPath}"
 fi
 
 if [ -z ${proj+x} ]; then
@@ -85,5 +77,3 @@ fi
 
 echo $nugetSourceCmd
 eval $nugetSourceCmd
-
-#$(eval "${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir ${scriptPath}/bin --push-nupkgs-local GodotCppNugetSource")
