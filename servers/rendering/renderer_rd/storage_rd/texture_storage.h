@@ -116,7 +116,7 @@ private:
 		RID dither;
 		Color specular_color = Color(1, 1, 1, 1);
 		float shininess = 1.0;
-		int max_depth = 1.0;
+		ushort max_depth = 1.0;
 		Vector2i depth_base_position;
 
 		RS::CanvasItemTextureFilter texture_filter = RS::CANVAS_ITEM_TEXTURE_FILTER_DEFAULT;
@@ -497,7 +497,7 @@ public:
 
 	virtual void canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) override;
 	virtual void canvas_texture_set_specular_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) override;
-	virtual void canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth, Vector2i depth_base_position) override;
+	virtual void canvas_texture_set_depth_parameters(RID p_canvas_texture, ushort max_depth, Vector2i depth_base_position) override;
 
 	virtual void canvas_texture_set_texture_filter(RID p_item, RS::CanvasItemTextureFilter p_filter) override;
 	virtual void canvas_texture_set_texture_repeat(RID p_item, RS::CanvasItemTextureRepeat p_repeat) override;

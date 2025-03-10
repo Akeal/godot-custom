@@ -638,7 +638,7 @@ void TextureStorage::canvas_texture_set_specular_parameters(RID p_canvas_texture
 	ct->specular_color.a = p_shininess;
 }
 
-void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth, Vector2i depth_base_position) {
+void TextureStorage::canvas_texture_set_depth_parameters(RID p_canvas_texture, ushort max_depth, Vector2i depth_base_position) {
 	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
 	ERR_FAIL_NULL(ct);
 

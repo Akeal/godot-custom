@@ -2352,7 +2352,7 @@ void RendererCanvasCull::canvas_texture_set_specular_parameters(RID p_canvas_tex
 	RSG::texture_storage->canvas_texture_set_specular_parameters(p_canvas_texture, p_base_color, p_shininess);
 }
 
-void RendererCanvasCull::canvas_texture_set_depth_parameters(RID p_canvas_texture, int max_depth, Vector2i depth_base_position) {
+void RendererCanvasCull::canvas_texture_set_depth_parameters(RID p_canvas_texture, ushort max_depth, Vector2i depth_base_position) {
 	RSG::texture_storage->canvas_texture_set_depth_parameters(p_canvas_texture, max_depth, depth_base_position);
 }
 
