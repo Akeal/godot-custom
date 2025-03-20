@@ -1679,7 +1679,7 @@ real_t CanvasTexture::get_specular_shininess() const {
 	return shininess;
 }
 
-void CanvasTexture::set_maximum_depth(ushort p_max_depth) {
+void CanvasTexture::set_maximum_depth(uint p_max_depth) {
 	if (max_depth == p_max_depth) {
 		return;
 	}
@@ -1812,7 +1812,7 @@ void CanvasTexture::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "normal_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_normal_texture", "get_normal_texture");
 	ADD_GROUP("DepthMap", "depth_");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "depth_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_depth_texture", "get_depth_texture");
-	ADD_PROPERTY(PropertyInfo(Variant::USHORT, "depth_max", PROPERTY_HINT_RANGE, "0,2147483647,1"), "set_maximum_depth", "get_maximum_depth");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "depth_max", PROPERTY_HINT_RANGE, "0,2147483647,1"), "set_maximum_depth", "get_maximum_depth");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "depth_base_position"), "set_depth_base_position", "get_depth_base_position");
 	ADD_GROUP("DitherMap", "dither_");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "dither_texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_dither_texture", "get_dither_texture");
