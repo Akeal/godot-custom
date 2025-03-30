@@ -41,11 +41,6 @@ glueCmd="${scriptPath}/bin/godot.linuxbsd.editor.x86_64.mono --headless --genera
 echo $glueCmd
 eval $glueCmd
 
-echo "Building managed libraries..."
-buildManagedLibraries="${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=${scriptPath}/bin"
-echo $buildManagedLibraries
-eval $buildManagedLibraries
-
 echo "Checking current nuget sources..."
 if [ -z ${proj+x} ]; then
   echo "Project not specified. Using default nuget config."
@@ -77,3 +72,8 @@ fi
 
 echo $nugetSourceCmd
 eval $nugetSourceCmd
+
+echo "Building managed libraries..."
+buildManagedLibraries="${scriptPath}/modules/mono/build_scripts/build_assemblies.py --godot-output-dir ${scriptPath}/bin --push-nupkgs-local ${nugetSource}"
+echo $buildManagedLibraries
+eval $buildManagedLibraries
