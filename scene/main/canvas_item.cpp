@@ -1679,7 +1679,7 @@ real_t CanvasTexture::get_specular_shininess() const {
 	return shininess;
 }
 
-void CanvasTexture::set_maximum_depth(uint p_max_depth) {
+void CanvasTexture::set_maximum_depth(int p_max_depth) {
 	if (max_depth == p_max_depth) {
 		return;
 	}

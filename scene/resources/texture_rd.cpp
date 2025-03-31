@@ -36,13 +36,17 @@
 void Texture2DRD::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texture_rd_rid", "texture_rd_rid"), &Texture2DRD::set_texture_rd_rid);
 	ClassDB::bind_method(D_METHOD("get_texture_rd_rid"), &Texture2DRD::get_texture_rd_rid);
+	ClassDB::bind_method(D_METHOD("set_rendering_device", "rendering_device"), &Texture2DRD::set_rendering_device);
+	ClassDB::bind_method(D_METHOD("get_rendering_device"), &Texture2DRD::get_rendering_device);
 
 	ADD_PROPERTY(PropertyInfo(Variant::RID, "texture_rd_rid", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_texture_rd_rid", "get_texture_rd_rid");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "rendering_device", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NONE), "set_rendering_device", "get_rendering_device");
 }
 
 int Texture2DRD::get_width() const {
 	return size.width;
 }
+
 
 int Texture2DRD::get_height() const {
 	return size.height;
@@ -86,10 +90,16 @@ void Texture2DRD::set_texture_rd_rid(RID p_texture_rd_rid) {
 }
 
 void Texture2DRD::_set_texture_rd_rid(RID p_texture_rd_rid) {
-	ERR_FAIL_NULL(RD::get_singleton());
-	ERR_FAIL_COND(!RD::get_singleton()->texture_is_valid(p_texture_rd_rid));
+	ERR_FAIL_NULL(rendering_device);
+	//ERR_FAIL_COND(!rendering_device->texture_is_valid(p_texture_rd_rid));
 
-	RD::TextureFormat tf = RD::get_singleton()->texture_get_format(p_texture_rd_rid);
+	if (unlikely(!rendering_device->texture_is_valid(p_texture_rd_rid))) {                                                                            \
+		_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(!rendering_device->texture_is_valid(p_texture_rd_rid)) "\" is true."); \
+		return;                                                                                        \
+	} else                                                                                             \
+		((void)0);
+
+	RD::TextureFormat tf = rendering_device->texture_get_format(p_texture_rd_rid);
 	ERR_FAIL_COND(tf.texture_type != RD::TEXTURE_TYPE_2D);
 	ERR_FAIL_COND(tf.depth > 1);
 	ERR_FAIL_COND(tf.array_layers > 1);
@@ -113,7 +123,21 @@ RID Texture2DRD::get_texture_rd_rid() const {
 	return texture_rd_rid;
 }
 
+void Texture2DRD::set_rendering_device(RenderingDevice *p_rendering_device) {
+	ERR_FAIL_NULL(p_rendering_device);
+
+	rendering_device = p_rendering_device;
+
+	notify_property_list_changed();
+	emit_changed();
+}
+
+RenderingDevice *Texture2DRD::get_rendering_device() const {
+	return rendering_device;
+}
+
 Texture2DRD::Texture2DRD() {
+	rendering_device = RD::get_singleton();
 	size = Size2i();
 }
 

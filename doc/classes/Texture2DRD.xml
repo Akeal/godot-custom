@@ -13,5 +13,8 @@
 		<member name="texture_rd_rid" type="RID" setter="set_texture_rd_rid" getter="get_texture_rd_rid">
 			The RID of the texture object created on the [RenderingDevice].
 		</member>
+		<member name="rendering_device" type="Object" setter="set_rendering_device" getter="get_rendering_device">
+			The parent [RenderingDevice] of the texture object.
+		</member>
 	</members>
 </class>

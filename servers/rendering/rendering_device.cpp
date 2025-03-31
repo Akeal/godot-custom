@@ -47,6 +47,8 @@
 #define ERR_RENDER_THREAD_GUARD() ERR_FAIL_COND_MSG(render_thread_id != Thread::get_caller_id(), ERR_RENDER_THREAD_MSG);
 #define ERR_RENDER_THREAD_GUARD_V(m_ret) ERR_FAIL_COND_V_MSG(render_thread_id != Thread::get_caller_id(), (m_ret), ERR_RENDER_THREAD_MSG);
 
+RendererTextureStorage *texture_storage = nullptr;
+
 /**************************/
 /**** HELPER FUNCTIONS ****/
 /**************************/
@@ -7156,6 +7158,8 @@ void RenderingDevice::finalize() {
 		driver = nullptr;
 	}
 
+	memdelete(texture_storage);
+
 	// All these should be clear at this point.
 	ERR_FAIL_COND(dependency_map.size());
 	ERR_FAIL_COND(reverse_dependency_map.size());
@@ -7922,6 +7926,7 @@ RenderingDevice::RenderingDevice() {
 	if (singleton == nullptr) {
 		singleton = this;
 	}
+	texture_storage = memnew(RendererRD::TextureStorage);
 
 	render_thread_id = Thread::get_caller_id();
 }

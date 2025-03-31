@@ -41,7 +41,7 @@
 #include "servers/rendering/storage/material_storage.h"
 #include "servers/rendering/storage/mesh_storage.h"
 #include "servers/rendering/storage/particles_storage.h"
-#include "servers/rendering/storage/texture_storage.h"
+//#include "servers/rendering/storage/texture_storage.h"
 #include "servers/rendering/storage/utilities.h"
 
 class RendererCanvasCull;

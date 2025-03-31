@@ -21,7 +21,7 @@
 		<member name="depth_texture" type="Texture2D" setter="set_depth_texture" getter="get_depth_texture">
 			The depth map texture to use. Used in calculating the volume this sprite occupies in 3D space for lighting.
 		</member>
-		<member name="max_depth" type="uint" setter="set_maximum_depth" getter="get_maximum_depth" default="1.0">
+		<member name="max_depth" type="int" setter="set_maximum_depth" getter="get_maximum_depth" default="1.0">
 			The maximum depth the depth texture can represent. The depth of the sprite will be from 0 to this value.
 		</member>
 		<member name="depth_base_position" type="Vector2i" setter="set_depth_base_position" getter="get_depth_base_position" default="1.0">

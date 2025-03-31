@@ -406,7 +406,7 @@ class CanvasTexture : public Texture2D {
 	Ref<Texture2D> dither_texture;
 	Vector2i depth_base_position;
 	Color specular = Color(1, 1, 1, 1);
-	uint max_depth = 1;
+	int max_depth = 1;
 	real_t shininess = 1.0;
 
 	RID canvas_texture;
@@ -433,7 +433,7 @@ public:
 	void set_specular_shininess(real_t p_shininess);
 	real_t get_specular_shininess() const;
 
-	void set_maximum_depth(uint p_max_depth);
+	void set_maximum_depth(int p_max_depth);
 	int get_maximum_depth() const;
 
 	void set_depth_base_position(Vector2i p_depth_base_position);

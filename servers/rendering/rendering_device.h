@@ -43,6 +43,7 @@
 #include "servers/rendering/rendering_device_commons.h"
 #include "servers/rendering/rendering_device_driver.h"
 #include "servers/rendering/rendering_device_graph.h"
+#include "servers/rendering/storage/texture_storage.h"
 
 class RDTextureFormat;
 class RDTextureView;
@@ -81,6 +82,8 @@ public:
 	typedef Vector<uint8_t> (*ShaderCacheFunction)(ShaderStage p_stage, const String &p_source_code, ShaderLanguage p_language);
 
 	typedef void (*InvalidationCallback)(void *);
+
+	static RendererTextureStorage *texture_storage;
 
 private:
 	static ShaderCompileToSPIRVFunction compile_to_spirv_function;

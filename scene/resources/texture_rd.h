@@ -42,6 +42,7 @@
 class Texture2DRD : public Texture2D {
 	GDCLASS(Texture2DRD, Texture2D)
 
+	RenderingDevice *rendering_device = nullptr;
 	mutable RID texture_rid;
 	RID texture_rd_rid;
 	Size2i size;
@@ -60,9 +61,13 @@ public:
 	void set_texture_rd_rid(RID p_texture_rd_rid);
 	RID get_texture_rd_rid() const;
 
+	void set_rendering_device(RenderingDevice *p_rendering_device);
+	RenderingDevice *get_rendering_device() const;
+
 	// Internal function that should only be called from the rendering thread.
 	void _set_texture_rd_rid(RID p_texture_rd_rid);
 
+	// Constructor default sto global rendering device if not set.
 	Texture2DRD();
 	~Texture2DRD();
 };
