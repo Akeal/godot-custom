@@ -1179,7 +1179,6 @@ void SceneTree::_process(bool p_physics) {
 	// They will be added at the end, hence for consistency they will be ignored by this process loop.
 	// No group will be removed from the array during processing (this is done earlier in this function by marking the groups dirty).
 	uint32_t process_group_count = process_groups.size();
-	uint32_t post_process_group_count = post_process_groups.size();
 
 	if (process_group_count != 0) {
 		process_last_pass++; // Increment pass
