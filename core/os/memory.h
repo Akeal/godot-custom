@@ -111,6 +111,7 @@ void operator delete(void *p_mem, void *p_pointer, size_t check, const char *p_d
 #endif
 
 #define memalloc(m_size) Memory::alloc_static(m_size)
+// Takes pointer to beginning of memory and length in bytes
 #define memrealloc(m_mem, m_size) Memory::realloc_static(m_mem, m_size)
 #define memfree(m_mem) Memory::free_static(m_mem)
 

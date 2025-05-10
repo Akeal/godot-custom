@@ -207,9 +207,9 @@ private:
 	uint32_t copy_bytes_count = 0;
 	String perf_report_text;
 
-	RID_Owner<Buffer, true> uniform_buffer_owner;
-	RID_Owner<Buffer, true> storage_buffer_owner;
-	RID_Owner<Buffer, true> texture_buffer_owner;
+	RID_Owner<Buffer, true>* uniform_buffer_owner;
+	RID_Owner<Buffer, true>* storage_buffer_owner;
+	RID_Owner<Buffer, true>* texture_buffer_owner;
 
 	struct BufferGetDataRequest {
 		uint32_t frame_local_index = 0;
@@ -224,6 +224,10 @@ public:
 	Error buffer_clear(RID p_buffer, uint32_t p_offset, uint32_t p_size);
 	Vector<uint8_t> buffer_get_data(RID p_buffer, uint32_t p_offset = 0, uint32_t p_size = 0); // This causes stall, only use to retrieve large buffers for saving.
 	Error buffer_get_data_async(RID p_buffer, const Callable &p_callback, uint32_t p_offset = 0, uint32_t p_size = 0);
+
+	RID borrow_texture_rid(RenderingDevice* external_rendering_device, RID rid);
+	RID borrow_storage_buffer_rid(RenderingDevice* external_rendering_device, RID rid);
+	RID borrow_uniform_rid(RenderingDevice* external_rendering_device, RID rid);
 
 	/*****************/
 	/**** TEXTURE ****/
@@ -312,7 +316,7 @@ public:
 		}
 	};
 
-	RID_Owner<Texture, true> texture_owner;
+	RID_Owner<Texture, true>* texture_owner;
 	uint32_t texture_upload_region_size_px = 0;
 	uint32_t texture_download_region_size_px = 0;
 

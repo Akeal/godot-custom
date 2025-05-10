@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <cstdint>
 
 #ifdef TVG_API
     #undef TVG_API

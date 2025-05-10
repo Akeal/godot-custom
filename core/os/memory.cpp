@@ -132,6 +132,7 @@ void *Memory::realloc_static(void *p_memory, size_t p_bytes, bool p_pad_align) {
 		return alloc_static(p_bytes, p_pad_align);
 	}
 
+	// Get the address of the memory
 	uint8_t *mem = (uint8_t *)p_memory;
 
 #ifdef DEBUG_ENABLED
@@ -140,7 +141,9 @@ void *Memory::realloc_static(void *p_memory, size_t p_bytes, bool p_pad_align) {
 	bool prepad = p_pad_align;
 #endif
 
+	// If the data should have padding...
 	if (prepad) {
+		// Move the address to the left DATA_OFFSET amount. DATA_OFFSET being the padding.
 		mem -= DATA_OFFSET;
 		uint64_t *s = (uint64_t *)(mem + SIZE_OFFSET);
 
@@ -154,25 +157,44 @@ void *Memory::realloc_static(void *p_memory, size_t p_bytes, bool p_pad_align) {
 #endif
 
 		if (p_bytes == 0) {
+			// The length of data being stored at this location is 0? Free it!
 			free(mem);
 			return nullptr;
 		} else {
+			// There IS some data we want to store at this location.
+			// Get a reference (pointer) to the byte length we passed into this method.
 			*s = p_bytes;
 
+			// call std::realloc
+			// Returns a pointer to the memory pointer of where the block of memory is located.
+			// Will either...
+			// Return the original location and adjust the allocated memory size to the new size
+			// Return a new memory location AND free the memory at the original location
+			// Allocates from the position of memory for the length of the requested amount of data we want to store.
+			// Mem is pointing at the start of the memory boundary so we need to allocate the length of the actual data PLUS the pre-pad buffer
 			mem = (uint8_t *)realloc(mem, p_bytes + DATA_OFFSET);
 			ERR_FAIL_NULL_V(mem, nullptr);
 
+			// Update the ORIGINAL memory reference that we passed into this method with the new memory length.
+			// Following the call to realloc_static, the memory length variable in the calling method will contain the new value.
 			s = (uint64_t *)(mem + SIZE_OFFSET);
 
 			*s = p_bytes;
 
+			// Earlier in the method we moved mem DATA_OFFSET to the left from the original mem address.
+			// We only care about the actual data held, not the full set of data that would include the empty pre-pad.
+			// So instead of returning the memory address...
+			// Return the address of where the data actually starts. The location of the data boundary + DATA_OFFSET
 			return mem + DATA_OFFSET;
 		}
 	} else {
+		// If the data does NOT need to be padded...
+		// Just resize the data block to the new size to the exact amount
 		mem = (uint8_t *)realloc(mem, p_bytes);
 
 		ERR_FAIL_COND_V(mem == nullptr && p_bytes > 0, nullptr);
 
+		// Return the pointer to the memory that was returned by realloc
 		return mem;
 	}
 }
@@ -180,6 +202,7 @@ void *Memory::realloc_static(void *p_memory, size_t p_bytes, bool p_pad_align) {
 void Memory::free_static(void *p_ptr, bool p_pad_align) {
 	ERR_FAIL_NULL(p_ptr);
 
+	// 8 bits of data. It's the pointer address.
 	uint8_t *mem = (uint8_t *)p_ptr;
 
 #ifdef DEBUG_ENABLED
@@ -188,18 +211,22 @@ void Memory::free_static(void *p_ptr, bool p_pad_align) {
 	bool prepad = p_pad_align;
 #endif
 
+	// We have one less element allocated.
 	alloc_count.decrement();
 
 	if (prepad) {
+		// If we pre-padded our data, get the address DATA_OFFSET amount to the left.
+		// This will set the pointer to be pointing at the start of the nearest data boundary, before the empty pre-padding.
 		mem -= DATA_OFFSET;
 
 #ifdef DEBUG_ENABLED
 		uint64_t *s = (uint64_t *)(mem + SIZE_OFFSET);
 		mem_usage.sub(*s);
 #endif
-
+		// Free the memory at the address
 		free(mem);
 	} else {
+		// If we don't pad the data just free it. Data be where data be.
 		free(mem);
 	}
 }
