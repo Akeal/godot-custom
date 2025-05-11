@@ -238,10 +238,10 @@ RID RenderingDevice::shader_create_from_spirv(const Vector<ShaderStageSPIRVData>
 
 RenderingDevice::Buffer *RenderingDevice::_get_buffer_from_owner(RID p_buffer) {
 	Buffer *buffer = nullptr;
-	if (vertex_buffer_owner->owns(p_buffer)) {
-		buffer = vertex_buffer_owner->get_or_null(p_buffer);
-	} else if (index_buffer_owner->owns(p_buffer)) {
-		buffer = index_buffer_owner->get_or_null(p_buffer);
+	if (vertex_buffer_owner.owns(p_buffer)) {
+		buffer = vertex_buffer_owner.get_or_null(p_buffer);
+	} else if (index_buffer_owner.owns(p_buffer)) {
+		buffer = index_buffer_owner.get_or_null(p_buffer);
 	} else if (uniform_buffer_owner->owns(p_buffer)) {
 		buffer = uniform_buffer_owner->get_or_null(p_buffer);
 	} else if (texture_buffer_owner->owns(p_buffer)) {
@@ -2728,12 +2728,12 @@ RID RenderingDevice::framebuffer_create_empty(const Size2i &p_size, TextureSampl
 	framebuffer_cache->height = p_size.height;
 	framebuffer.framebuffer_cache = framebuffer_cache;
 
-	RID id = framebuffer_owner->make_rid(framebuffer);
+	RID id = framebuffer_owner.make_rid(framebuffer);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
 
-	framebuffer_cache->render_pass_creation_user_data = framebuffer_owner->get_or_null(id);
+	framebuffer_cache->render_pass_creation_user_data = framebuffer_owner.get_or_null(id);
 
 	return id;
 }
@@ -2840,7 +2840,7 @@ RID RenderingDevice::framebuffer_create_multipass(const Vector<RID> &p_texture_a
 	framebuffer_cache->trackers = trackers;
 	framebuffer.framebuffer_cache = framebuffer_cache;
 
-	RID id = framebuffer_owner->make_rid(framebuffer);
+	RID id = framebuffer_owner.make_rid(framebuffer);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
@@ -2851,7 +2851,7 @@ RID RenderingDevice::framebuffer_create_multipass(const Vector<RID> &p_texture_a
 		}
 	}
 
-	framebuffer_cache->render_pass_creation_user_data = framebuffer_owner->get_or_null(id);
+	framebuffer_cache->render_pass_creation_user_data = framebuffer_owner.get_or_null(id);
 
 	return id;
 }
@@ -2859,7 +2859,7 @@ RID RenderingDevice::framebuffer_create_multipass(const Vector<RID> &p_texture_a
 RenderingDevice::FramebufferFormatID RenderingDevice::framebuffer_get_format(RID p_framebuffer) {
 	_THREAD_SAFE_METHOD_
 
-	Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_framebuffer);
+	Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_framebuffer);
 	ERR_FAIL_NULL_V(framebuffer, INVALID_ID);
 
 	return framebuffer->format_id;
@@ -2868,7 +2868,7 @@ RenderingDevice::FramebufferFormatID RenderingDevice::framebuffer_get_format(RID
 Size2 RenderingDevice::framebuffer_get_size(RID p_framebuffer) {
 	_THREAD_SAFE_METHOD_
 
-	Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_framebuffer);
+	Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_framebuffer);
 	ERR_FAIL_NULL_V(framebuffer, Size2(0, 0));
 
 	return framebuffer->size;
@@ -2877,13 +2877,13 @@ Size2 RenderingDevice::framebuffer_get_size(RID p_framebuffer) {
 bool RenderingDevice::framebuffer_is_valid(RID p_framebuffer) const {
 	_THREAD_SAFE_METHOD_
 
-	return framebuffer_owner->owns(p_framebuffer);
+	return framebuffer_owner.owns(p_framebuffer);
 }
 
 void RenderingDevice::framebuffer_set_invalidation_callback(RID p_framebuffer, InvalidationCallback p_callback, void *p_userdata) {
 	_THREAD_SAFE_METHOD_
 
-	Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_framebuffer);
+	Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_framebuffer);
 	ERR_FAIL_NULL(framebuffer);
 
 	framebuffer->invalidated_callback = p_callback;
@@ -2906,7 +2906,7 @@ RID RenderingDevice::sampler_create(const SamplerState &p_state) {
 	RDD::SamplerID sampler = driver->sampler_create(p_state);
 	ERR_FAIL_COND_V(!sampler, RID());
 
-	RID id = sampler_owner->make_rid(sampler);
+	RID id = sampler_owner.make_rid(sampler);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
@@ -2951,7 +2951,7 @@ RID RenderingDevice::vertex_buffer_create(uint32_t p_size_bytes, const Vector<ui
 	buffer_memory += buffer.size;
 	_THREAD_SAFE_UNLOCK_
 
-	RID id = vertex_buffer_owner->make_rid(buffer);
+	RID id = vertex_buffer_owner.make_rid(buffer);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
@@ -3000,7 +3000,7 @@ RID RenderingDevice::vertex_array_create(uint32_t p_vertex_count, VertexFormatID
 	ERR_FAIL_COND_V(vd.vertex_formats.size() != p_src_buffers.size(), RID());
 
 	for (int i = 0; i < p_src_buffers.size(); i++) {
-		ERR_FAIL_COND_V(!vertex_buffer_owner->owns(p_src_buffers[i]), RID());
+		ERR_FAIL_COND_V(!vertex_buffer_owner.owns(p_src_buffers[i]), RID());
 	}
 
 	VertexArray vertex_array;
@@ -3016,7 +3016,7 @@ RID RenderingDevice::vertex_array_create(uint32_t p_vertex_count, VertexFormatID
 	vertex_array.description = p_vertex_format;
 	vertex_array.max_instances_allowed = 0xFFFFFFFF; // By default as many as you want.
 	for (int i = 0; i < p_src_buffers.size(); i++) {
-		Buffer *buffer = vertex_buffer_owner->get_or_null(p_src_buffers[i]);
+		Buffer *buffer = vertex_buffer_owner.get_or_null(p_src_buffers[i]);
 
 		// Validate with buffer.
 		{
@@ -3056,7 +3056,7 @@ RID RenderingDevice::vertex_array_create(uint32_t p_vertex_count, VertexFormatID
 		}
 	}
 
-	RID id = vertex_array_owner->make_rid(vertex_array);
+	RID id = vertex_array_owner.make_rid(vertex_array);
 	for (int i = 0; i < p_src_buffers.size(); i++) {
 		_add_dependency(id, p_src_buffers[i]);
 	}
@@ -3120,7 +3120,7 @@ RID RenderingDevice::index_buffer_create(uint32_t p_index_count, IndexBufferForm
 	buffer_memory += index_buffer.size;
 	_THREAD_SAFE_UNLOCK_
 
-	RID id = index_buffer_owner->make_rid(index_buffer);
+	RID id = index_buffer_owner.make_rid(index_buffer);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
@@ -3130,9 +3130,9 @@ RID RenderingDevice::index_buffer_create(uint32_t p_index_count, IndexBufferForm
 RID RenderingDevice::index_array_create(RID p_index_buffer, uint32_t p_index_offset, uint32_t p_index_count) {
 	_THREAD_SAFE_METHOD_
 
-	ERR_FAIL_COND_V(!index_buffer_owner->owns(p_index_buffer), RID());
+	ERR_FAIL_COND_V(!index_buffer_owner.owns(p_index_buffer), RID());
 
-	IndexBuffer *index_buffer = index_buffer_owner->get_or_null(p_index_buffer);
+	IndexBuffer *index_buffer = index_buffer_owner.get_or_null(p_index_buffer);
 
 	ERR_FAIL_COND_V(p_index_count == 0, RID());
 	ERR_FAIL_COND_V(p_index_offset + p_index_count > index_buffer->index_count, RID());
@@ -3148,7 +3148,7 @@ RID RenderingDevice::index_array_create(RID p_index_buffer, uint32_t p_index_off
 	index_array.transfer_worker_index = index_buffer->transfer_worker_index;
 	index_array.transfer_worker_operation = index_buffer->transfer_worker_operation;
 
-	RID id = index_array_owner->make_rid(index_array);
+	RID id = index_array_owner.make_rid(index_array);
 	_add_dependency(id, p_index_buffer);
 	return id;
 }
@@ -3163,7 +3163,7 @@ static const char *SHADER_UNIFORM_NAMES[RenderingDevice::UNIFORM_TYPE_MAX] = {
 
 String RenderingDevice::_shader_uniform_debug(RID p_shader, int p_set) {
 	String ret;
-	const Shader *shader = shader_owner->get_or_null(p_shader);
+	const Shader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL_V(shader, String());
 	for (int i = 0; i < shader->uniform_sets.size(); i++) {
 		if (p_set >= 0 && i != p_set) {
@@ -3209,7 +3209,7 @@ RID RenderingDevice::shader_create_from_bytecode_with_samplers(const Vector<uint
 		driver_sampler.binding = source_sampler.binding;
 
 		for (uint32_t j = 0; j < source_sampler.get_id_count(); j++) {
-			RDD::SamplerID *sampler_driver_id = sampler_owner->get_or_null(source_sampler.get_id(j));
+			RDD::SamplerID *sampler_driver_id = sampler_owner.get_or_null(source_sampler.get_id(j));
 			driver_sampler.ids.push_back(*sampler_driver_id);
 		}
 
@@ -3222,12 +3222,12 @@ RID RenderingDevice::shader_create_from_bytecode_with_samplers(const Vector<uint
 
 	RID id;
 	if (p_placeholder.is_null()) {
-		id = shader_owner->make_rid();
+		id = shader_owner.make_rid();
 	} else {
 		id = p_placeholder;
 	}
 
-	Shader *shader = shader_owner->get_or_null(id);
+	Shader *shader = shader_owner.get_or_null(id);
 	ERR_FAIL_NULL_V(shader, RID());
 
 	*((ShaderDescription *)shader) = shader_desc; // ShaderDescription bundle.
@@ -3287,7 +3287,7 @@ RID RenderingDevice::shader_create_from_bytecode_with_samplers(const Vector<uint
 }
 
 void RenderingDevice::shader_destroy_modules(RID p_shader) {
-	Shader *shader = shader_owner->get_or_null(p_shader);
+	Shader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL(shader);
 	driver->shader_destroy_modules(shader->driver_id);
 }
@@ -3296,13 +3296,13 @@ RID RenderingDevice::shader_create_placeholder() {
 	_THREAD_SAFE_METHOD_
 
 	Shader shader;
-	return shader_owner->make_rid(shader);
+	return shader_owner.make_rid(shader);
 }
 
 uint64_t RenderingDevice::shader_get_vertex_input_attribute_mask(RID p_shader) {
 	_THREAD_SAFE_METHOD_
 
-	const Shader *shader = shader_owner->get_or_null(p_shader);
+	const Shader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL_V(shader, 0);
 	return shader->vertex_input_mask;
 }
@@ -3351,7 +3351,7 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 
 	ERR_FAIL_COND_V(p_uniforms.is_empty(), RID());
 
-	Shader *shader = shader_owner->get_or_null(p_shader);
+	Shader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL_V(shader, RID());
 
 	ERR_FAIL_COND_V_MSG(p_shader_set >= (uint32_t)shader->uniform_sets.size() || shader->uniform_sets[p_shader_set].is_empty(), RID(),
@@ -3411,7 +3411,7 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 				}
 
 				for (uint32_t j = 0; j < uniform.get_id_count(); j++) {
-					RDD::SamplerID *sampler_driver_id = sampler_owner->get_or_null(uniform.get_id(j));
+					RDD::SamplerID *sampler_driver_id = sampler_owner.get_or_null(uniform.get_id(j));
 					ERR_FAIL_NULL_V_MSG(sampler_driver_id, RID(), "Sampler (binding: " + itos(uniform.binding) + ", index " + itos(j) + ") is not a valid sampler.");
 
 					driver_uniform.ids.push_back(*sampler_driver_id);
@@ -3427,7 +3427,7 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 				}
 
 				for (uint32_t j = 0; j < uniform.get_id_count(); j += 2) {
-					RDD::SamplerID *sampler_driver_id = sampler_owner->get_or_null(uniform.get_id(j + 0));
+					RDD::SamplerID *sampler_driver_id = sampler_owner.get_or_null(uniform.get_id(j + 0));
 					ERR_FAIL_NULL_V_MSG(sampler_driver_id, RID(), "SamplerBuffer (binding: " + itos(uniform.binding) + ", index " + itos(j + 1) + ") is not a valid sampler.");
 
 					RID texture_id = uniform.get_id(j + 1);
@@ -3600,7 +3600,7 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 				}
 
 				for (uint32_t j = 0; j < uniform.get_id_count(); j += 2) {
-					RDD::SamplerID *sampler_driver_id = sampler_owner->get_or_null(uniform.get_id(j + 0));
+					RDD::SamplerID *sampler_driver_id = sampler_owner.get_or_null(uniform.get_id(j + 0));
 					ERR_FAIL_NULL_V_MSG(sampler_driver_id, RID(), "SamplerBuffer (binding: " + itos(uniform.binding) + ", index " + itos(j + 1) + ") is not a valid sampler.");
 
 					RID buffer_id = uniform.get_id(j + 1);
@@ -3652,8 +3652,8 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 				RID buffer_id = uniform.get_id(0);
 				if (storage_buffer_owner->owns(buffer_id)) {
 					buffer = storage_buffer_owner->get_or_null(buffer_id);
-				} else if (vertex_buffer_owner->owns(buffer_id)) {
-					buffer = vertex_buffer_owner->get_or_null(buffer_id);
+				} else if (vertex_buffer_owner.owns(buffer_id)) {
+					buffer = vertex_buffer_owner.get_or_null(buffer_id);
 
 					ERR_FAIL_COND_V_MSG(!(buffer->usage.has_flag(RDD::BUFFER_USAGE_STORAGE_BIT)), RID(), "Vertex buffer supplied (binding: " + itos(uniform.binding) + ") was not created with storage flag.");
 				}
@@ -3729,7 +3729,7 @@ RID RenderingDevice::uniform_set_create(const Collection &p_uniforms, RID p_shad
 	uniform_set.shader_set = p_shader_set;
 	uniform_set.shader_id = p_shader;
 
-	RID id = uniform_set_owner->make_rid(uniform_set);
+	RID id = uniform_set_owner.make_rid(uniform_set);
 #ifdef DEV_ENABLED
 	set_resource_name(id, "RID:" + itos(id.get_id()));
 #endif
@@ -3757,13 +3757,13 @@ void RenderingDevice::_uniform_set_update_shared(UniformSet *p_uniform_set) {
 bool RenderingDevice::uniform_set_is_valid(RID p_uniform_set) {
 	_THREAD_SAFE_METHOD_
 
-	return uniform_set_owner->owns(p_uniform_set);
+	return uniform_set_owner.owns(p_uniform_set);
 }
 
 void RenderingDevice::uniform_set_set_invalidation_callback(RID p_uniform_set, InvalidationCallback p_callback, void *p_userdata) {
 	_THREAD_SAFE_METHOD_
 
-	UniformSet *us = uniform_set_owner->get_or_null(p_uniform_set);
+	UniformSet *us = uniform_set_owner.get_or_null(p_uniform_set);
 	ERR_FAIL_NULL(us);
 	us->invalidated_callback = p_callback;
 	us->invalidated_callback_userdata = p_userdata;
@@ -3779,7 +3779,7 @@ bool RenderingDevice::uniform_sets_have_linear_pools() const {
 
 RID RenderingDevice::render_pipeline_create(RID p_shader, FramebufferFormatID p_framebuffer_format, VertexFormatID p_vertex_format, RenderPrimitive p_render_primitive, const PipelineRasterizationState &p_rasterization_state, const PipelineMultisampleState &p_multisample_state, const PipelineDepthStencilState &p_depth_stencil_state, const PipelineColorBlendState &p_blend_state, BitField<PipelineDynamicStateFlags> p_dynamic_state_flags, uint32_t p_for_render_pass, const Vector<PipelineSpecializationConstant> &p_specialization_constants) {
 	// Needs a shader.
-	Shader *shader = shader_owner->get_or_null(p_shader);
+	Shader *shader = shader_owner.get_or_null(p_shader);
 	ERR_FAIL_NULL_V(shader, RID());
 	ERR_FAIL_COND_V_MSG(shader->is_compute, RID(), "Compute shaders can't be used in render pipelines");
 
@@ -3941,7 +3941,7 @@ RID RenderingDevice::render_pipeline_create(RID p_shader, FramebufferFormatID p_
 #endif
 
 	// Create ID to associate with this pipeline.
-	RID id = render_pipeline_owner->make_rid(pipeline);
+	RID id = render_pipeline_owner.make_rid(pipeline);
 	{
 		_THREAD_SAFE_METHOD_
 
@@ -3958,7 +3958,7 @@ RID RenderingDevice::render_pipeline_create(RID p_shader, FramebufferFormatID p_
 bool RenderingDevice::render_pipeline_is_valid(RID p_pipeline) {
 	_THREAD_SAFE_METHOD_
 
-	return render_pipeline_owner->owns(p_pipeline);
+	return render_pipeline_owner.owns(p_pipeline);
 }
 
 RID RenderingDevice::compute_pipeline_create(RID p_shader, const Vector<PipelineSpecializationConstant> &p_specialization_constants) {
@@ -3968,7 +3968,7 @@ RID RenderingDevice::compute_pipeline_create(RID p_shader, const Vector<Pipeline
 		_THREAD_SAFE_METHOD_
 
 		// Needs a shader.
-		shader = shader_owner->get_or_null(p_shader);
+		shader = shader_owner.get_or_null(p_shader);
 		ERR_FAIL_NULL_V(shader, RID());
 
 		ERR_FAIL_COND_V_MSG(!shader->is_compute, RID(),
@@ -4004,7 +4004,7 @@ RID RenderingDevice::compute_pipeline_create(RID p_shader, const Vector<Pipeline
 	pipeline.local_group_size[2] = shader->compute_local_size[2];
 
 	// Create ID to associate with this pipeline.
-	RID id = compute_pipeline_owner->make_rid(pipeline);
+	RID id = compute_pipeline_owner.make_rid(pipeline);
 	{
 		_THREAD_SAFE_METHOD_
 
@@ -4021,7 +4021,7 @@ RID RenderingDevice::compute_pipeline_create(RID p_shader, const Vector<Pipeline
 bool RenderingDevice::compute_pipeline_is_valid(RID p_pipeline) {
 	_THREAD_SAFE_METHOD_
 
-	return compute_pipeline_owner->owns(p_pipeline);
+	return compute_pipeline_owner.owns(p_pipeline);
 }
 
 /****************/
@@ -4202,7 +4202,7 @@ RenderingDevice::DrawListID RenderingDevice::draw_list_begin(RID p_framebuffer, 
 
 	ERR_FAIL_COND_V_MSG(draw_list != nullptr, INVALID_ID, "Only one draw list can be active at the same time.");
 
-	Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_framebuffer);
+	Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_framebuffer);
 	ERR_FAIL_NULL_V(framebuffer, INVALID_ID);
 
 	Point2i viewport_offset;
@@ -4351,7 +4351,7 @@ void RenderingDevice::draw_list_bind_render_pipeline(DrawListID p_list, RID p_re
 	ERR_FAIL_COND_MSG(!dl->validation.active, "Submitted Draw Lists can no longer be modified.");
 #endif
 
-	const RenderPipeline *pipeline = render_pipeline_owner->get_or_null(p_render_pipeline);
+	const RenderPipeline *pipeline = render_pipeline_owner.get_or_null(p_render_pipeline);
 	ERR_FAIL_NULL(pipeline);
 #ifdef DEBUG_ENABLED
 	ERR_FAIL_COND(pipeline->validation.framebuffer_format != draw_list_framebuffer_format && pipeline->validation.render_pass != draw_list_current_subpass);
@@ -4447,7 +4447,7 @@ void RenderingDevice::draw_list_bind_uniform_set(DrawListID p_list, RID p_unifor
 	ERR_FAIL_COND_MSG(!dl->validation.active, "Submitted Draw Lists can no longer be modified.");
 #endif
 
-	const UniformSet *uniform_set = uniform_set_owner->get_or_null(p_uniform_set);
+	const UniformSet *uniform_set = uniform_set_owner.get_or_null(p_uniform_set);
 	ERR_FAIL_NULL(uniform_set);
 
 	if (p_index > dl->state.set_count) {
@@ -4484,7 +4484,7 @@ void RenderingDevice::draw_list_bind_vertex_array(DrawListID p_list, RID p_verte
 	ERR_FAIL_COND_MSG(!dl->validation.active, "Submitted Draw Lists can no longer be modified.");
 #endif
 
-	VertexArray *vertex_array = vertex_array_owner->get_or_null(p_vertex_array);
+	VertexArray *vertex_array = vertex_array_owner.get_or_null(p_vertex_array);
 	ERR_FAIL_NULL(vertex_array);
 
 	if (dl->state.vertex_array == p_vertex_array) {
@@ -4517,7 +4517,7 @@ void RenderingDevice::draw_list_bind_index_array(DrawListID p_list, RID p_index_
 	ERR_FAIL_COND_MSG(!dl->validation.active, "Submitted Draw Lists can no longer be modified.");
 #endif
 
-	IndexArray *index_array = index_array_owner->get_or_null(p_index_array);
+	IndexArray *index_array = index_array_owner.get_or_null(p_index_array);
 	ERR_FAIL_NULL(index_array);
 
 	if (dl->state.index_array == p_index_array) {
@@ -4616,8 +4616,8 @@ void RenderingDevice::draw_list_draw(DrawListID p_list, bool p_use_indices, uint
 		if (dl->state.sets[i].pipeline_expected_format != dl->state.sets[i].uniform_set_format) {
 			if (dl->state.sets[i].uniform_set_format == 0) {
 				ERR_FAIL_MSG("Uniforms were never supplied for set (" + itos(i) + ") at the time of drawing, which are required by the pipeline.");
-			} else if (uniform_set_owner->owns(dl->state.sets[i].uniform_set)) {
-				UniformSet *us = uniform_set_owner->get_or_null(dl->state.sets[i].uniform_set);
+			} else if (uniform_set_owner.owns(dl->state.sets[i].uniform_set)) {
+				UniformSet *us = uniform_set_owner.get_or_null(dl->state.sets[i].uniform_set);
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + "):\n" + _shader_uniform_debug(us->shader_id, us->shader_set) + "\nare not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(dl->state.pipeline_shader));
 			} else {
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + ", which was just freed) are not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(dl->state.pipeline_shader));
@@ -4671,7 +4671,7 @@ void RenderingDevice::draw_list_draw(DrawListID p_list, bool p_use_indices, uint
 					valid_set_count++;
 				}
 
-				UniformSet *uniform_set = uniform_set_owner->get_or_null(dl->state.sets[i].uniform_set);
+				UniformSet *uniform_set = uniform_set_owner.get_or_null(dl->state.sets[i].uniform_set);
 				_uniform_set_update_shared(uniform_set);
 				draw_graph.add_draw_list_usages(uniform_set->draw_trackers, uniform_set->draw_trackers_usage);
 				dl->state.sets[i].bound = true;
@@ -4785,8 +4785,8 @@ void RenderingDevice::draw_list_draw_indirect(DrawListID p_list, bool p_use_indi
 		if (dl->state.sets[i].pipeline_expected_format != dl->state.sets[i].uniform_set_format) {
 			if (dl->state.sets[i].uniform_set_format == 0) {
 				ERR_FAIL_MSG(vformat("Uniforms were never supplied for set (%d) at the time of drawing, which are required by the pipeline.", i));
-			} else if (uniform_set_owner->owns(dl->state.sets[i].uniform_set)) {
-				UniformSet *us = uniform_set_owner->get_or_null(dl->state.sets[i].uniform_set);
+			} else if (uniform_set_owner.owns(dl->state.sets[i].uniform_set)) {
+				UniformSet *us = uniform_set_owner.get_or_null(dl->state.sets[i].uniform_set);
 				ERR_FAIL_MSG(vformat("Uniforms supplied for set (%d):\n%s\nare not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n%s", i, _shader_uniform_debug(us->shader_id, us->shader_set), _shader_uniform_debug(dl->state.pipeline_shader)));
 			} else {
 				ERR_FAIL_MSG(vformat("Uniforms supplied for set (%s, which was just freed) are not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n%s", i, _shader_uniform_debug(dl->state.pipeline_shader)));
@@ -4816,7 +4816,7 @@ void RenderingDevice::draw_list_draw_indirect(DrawListID p_list, bool p_use_indi
 			// All good, see if this requires re-binding.
 			draw_graph.add_draw_list_bind_uniform_set(dl->state.pipeline_shader_driver_id, dl->state.sets[i].uniform_set_driver_id, i);
 
-			UniformSet *uniform_set = uniform_set_owner->get_or_null(dl->state.sets[i].uniform_set);
+			UniformSet *uniform_set = uniform_set_owner.get_or_null(dl->state.sets[i].uniform_set);
 			_uniform_set_update_shared(uniform_set);
 
 			draw_graph.add_draw_list_usages(uniform_set->draw_trackers, uniform_set->draw_trackers_usage);
@@ -4994,7 +4994,7 @@ void RenderingDevice::compute_list_bind_compute_pipeline(ComputeListID p_list, R
 
 	ComputeList *cl = compute_list;
 
-	const ComputePipeline *pipeline = compute_pipeline_owner->get_or_null(p_compute_pipeline);
+	const ComputePipeline *pipeline = compute_pipeline_owner.get_or_null(p_compute_pipeline);
 	ERR_FAIL_NULL(pipeline);
 
 	if (p_compute_pipeline == cl->state.pipeline) {
@@ -5082,7 +5082,7 @@ void RenderingDevice::compute_list_bind_uniform_set(ComputeListID p_list, RID p_
 	ERR_FAIL_COND_MSG(!cl->validation.active, "Submitted Compute Lists can no longer be modified.");
 #endif
 
-	UniformSet *uniform_set = uniform_set_owner->get_or_null(p_uniform_set);
+	UniformSet *uniform_set = uniform_set_owner.get_or_null(p_uniform_set);
 	ERR_FAIL_NULL(uniform_set);
 
 	if (p_index > cl->state.set_count) {
@@ -5183,8 +5183,8 @@ void RenderingDevice::compute_list_dispatch(ComputeListID p_list, uint32_t p_x_g
 		if (cl->state.sets[i].pipeline_expected_format != cl->state.sets[i].uniform_set_format) {
 			if (cl->state.sets[i].uniform_set_format == 0) {
 				ERR_FAIL_MSG("Uniforms were never supplied for set (" + itos(i) + ") at the time of drawing, which are required by the pipeline.");
-			} else if (uniform_set_owner->owns(cl->state.sets[i].uniform_set)) {
-				UniformSet *us = uniform_set_owner->get_or_null(cl->state.sets[i].uniform_set);
+			} else if (uniform_set_owner.owns(cl->state.sets[i].uniform_set)) {
+				UniformSet *us = uniform_set_owner.get_or_null(cl->state.sets[i].uniform_set);
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + "):\n" + _shader_uniform_debug(us->shader_id, us->shader_set) + "\nare not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(cl->state.pipeline_shader));
 			} else {
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + ", which was just freed) are not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(cl->state.pipeline_shader));
@@ -5244,7 +5244,7 @@ void RenderingDevice::compute_list_dispatch(ComputeListID p_list, uint32_t p_x_g
 			} else {
 				draw_graph.add_compute_list_bind_uniform_set(cl->state.pipeline_shader_driver_id, cl->state.sets[i].uniform_set_driver_id, i);
 			}
-			UniformSet *uniform_set = uniform_set_owner->get_or_null(cl->state.sets[i].uniform_set);
+			UniformSet *uniform_set = uniform_set_owner.get_or_null(cl->state.sets[i].uniform_set);
 			_uniform_set_update_shared(uniform_set);
 
 			draw_graph.add_compute_list_usages(uniform_set->draw_trackers, uniform_set->draw_trackers_usage);
@@ -5329,8 +5329,8 @@ void RenderingDevice::compute_list_dispatch_indirect(ComputeListID p_list, RID p
 		if (cl->state.sets[i].pipeline_expected_format != cl->state.sets[i].uniform_set_format) {
 			if (cl->state.sets[i].uniform_set_format == 0) {
 				ERR_FAIL_MSG("Uniforms were never supplied for set (" + itos(i) + ") at the time of drawing, which are required by the pipeline.");
-			} else if (uniform_set_owner->owns(cl->state.sets[i].uniform_set)) {
-				UniformSet *us = uniform_set_owner->get_or_null(cl->state.sets[i].uniform_set);
+			} else if (uniform_set_owner.owns(cl->state.sets[i].uniform_set)) {
+				UniformSet *us = uniform_set_owner.get_or_null(cl->state.sets[i].uniform_set);
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + "):\n" + _shader_uniform_debug(us->shader_id, us->shader_set) + "\nare not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(cl->state.pipeline_shader));
 			} else {
 				ERR_FAIL_MSG("Uniforms supplied for set (" + itos(i) + ", which was just freed) are not the same format as required by the pipeline shader. Pipeline shader requires the following bindings:\n" + _shader_uniform_debug(cl->state.pipeline_shader));
@@ -5387,7 +5387,7 @@ void RenderingDevice::compute_list_dispatch_indirect(ComputeListID p_list, RID p
 
 			last_set_index = i;
 
-			UniformSet *uniform_set = uniform_set_owner->get_or_null(cl->state.sets[i].uniform_set);
+			UniformSet *uniform_set = uniform_set_owner.get_or_null(cl->state.sets[i].uniform_set);
 			_uniform_set_update_shared(uniform_set);
 
 			draw_graph.add_compute_list_usages(uniform_set->draw_trackers, uniform_set->draw_trackers_usage);
@@ -5888,14 +5888,14 @@ bool RenderingDevice::_dependency_make_mutable(RID p_id, RID p_resource_id, RDG:
 	if (texture_owner->owns(p_id)) {
 		Texture *texture = texture_owner->get_or_null(p_id);
 		return _texture_make_mutable(texture, p_id);
-	} else if (vertex_array_owner->owns(p_id)) {
-		VertexArray *vertex_array = vertex_array_owner->get_or_null(p_id);
+	} else if (vertex_array_owner.owns(p_id)) {
+		VertexArray *vertex_array = vertex_array_owner.get_or_null(p_id);
 		return _vertex_array_make_mutable(vertex_array, p_resource_id, p_resource_tracker);
-	} else if (index_array_owner->owns(p_id)) {
-		IndexArray *index_array = index_array_owner->get_or_null(p_id);
+	} else if (index_array_owner.owns(p_id)) {
+		IndexArray *index_array = index_array_owner.get_or_null(p_id);
 		return _index_array_make_mutable(index_array, p_resource_tracker);
-	} else if (uniform_set_owner->owns(p_id)) {
-		UniformSet *uniform_set = uniform_set_owner->get_or_null(p_id);
+	} else if (uniform_set_owner.owns(p_id)) {
+		UniformSet *uniform_set = uniform_set_owner.get_or_null(p_id);
 		return _uniform_set_make_mutable(uniform_set, p_resource_id, p_resource_tracker);
 	} else {
 		DEV_ASSERT(false && "Unknown resource type to make mutable.");
@@ -5963,43 +5963,43 @@ void RenderingDevice::_free_internal(RID p_id) {
 
 		frames[frame].textures_to_dispose_of.push_back(*texture);
 		texture_owner->free(p_id);
-	} else if (framebuffer_owner->owns(p_id)) {
-		Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_id);
+	} else if (framebuffer_owner.owns(p_id)) {
+		Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_id);
 		frames[frame].framebuffers_to_dispose_of.push_back(*framebuffer);
 
 		if (framebuffer->invalidated_callback != nullptr) {
 			framebuffer->invalidated_callback(framebuffer->invalidated_callback_userdata);
 		}
 
-		framebuffer_owner->free(p_id);
-	} else if (sampler_owner->owns(p_id)) {
-		RDD::SamplerID sampler_driver_id = *sampler_owner->get_or_null(p_id);
+		framebuffer_owner.free(p_id);
+	} else if (sampler_owner.owns(p_id)) {
+		RDD::SamplerID sampler_driver_id = *sampler_owner.get_or_null(p_id);
 		frames[frame].samplers_to_dispose_of.push_back(sampler_driver_id);
-		sampler_owner->free(p_id);
-	} else if (vertex_buffer_owner->owns(p_id)) {
-		Buffer *vertex_buffer = vertex_buffer_owner->get_or_null(p_id);
+		sampler_owner.free(p_id);
+	} else if (vertex_buffer_owner.owns(p_id)) {
+		Buffer *vertex_buffer = vertex_buffer_owner.get_or_null(p_id);
 		_check_transfer_worker_buffer(vertex_buffer);
 
 		RDG::resource_tracker_free(vertex_buffer->draw_tracker);
 		frames[frame].buffers_to_dispose_of.push_back(*vertex_buffer);
-		vertex_buffer_owner->free(p_id);
-	} else if (vertex_array_owner->owns(p_id)) {
-		vertex_array_owner->free(p_id);
-	} else if (index_buffer_owner->owns(p_id)) {
-		IndexBuffer *index_buffer = index_buffer_owner->get_or_null(p_id);
+		vertex_buffer_owner.free(p_id);
+	} else if (vertex_array_owner.owns(p_id)) {
+		vertex_array_owner.free(p_id);
+	} else if (index_buffer_owner.owns(p_id)) {
+		IndexBuffer *index_buffer = index_buffer_owner.get_or_null(p_id);
 		_check_transfer_worker_buffer(index_buffer);
 
 		RDG::resource_tracker_free(index_buffer->draw_tracker);
 		frames[frame].buffers_to_dispose_of.push_back(*index_buffer);
-		index_buffer_owner->free(p_id);
-	} else if (index_array_owner->owns(p_id)) {
-		index_array_owner->free(p_id);
-	} else if (shader_owner->owns(p_id)) {
-		Shader *shader = shader_owner->get_or_null(p_id);
+		index_buffer_owner.free(p_id);
+	} else if (index_array_owner.owns(p_id)) {
+		index_array_owner.free(p_id);
+	} else if (shader_owner.owns(p_id)) {
+		Shader *shader = shader_owner.get_or_null(p_id);
 		if (shader->driver_id) { // Not placeholder?
 			frames[frame].shaders_to_dispose_of.push_back(*shader);
 		}
-		shader_owner->free(p_id);
+		shader_owner.free(p_id);
 	} else if (uniform_buffer_owner->owns(p_id)) {
 		Buffer *uniform_buffer = uniform_buffer_owner->get_or_null(p_id);
 		_check_transfer_worker_buffer(uniform_buffer);
@@ -6021,22 +6021,22 @@ void RenderingDevice::_free_internal(RID p_id) {
 		RDG::resource_tracker_free(storage_buffer->draw_tracker);
 		frames[frame].buffers_to_dispose_of.push_back(*storage_buffer);
 		storage_buffer_owner->free(p_id);
-	} else if (uniform_set_owner->owns(p_id)) {
-		UniformSet *uniform_set = uniform_set_owner->get_or_null(p_id);
+	} else if (uniform_set_owner.owns(p_id)) {
+		UniformSet *uniform_set = uniform_set_owner.get_or_null(p_id);
 		frames[frame].uniform_sets_to_dispose_of.push_back(*uniform_set);
-		uniform_set_owner->free(p_id);
+		uniform_set_owner.free(p_id);
 
 		if (uniform_set->invalidated_callback != nullptr) {
 			uniform_set->invalidated_callback(uniform_set->invalidated_callback_userdata);
 		}
-	} else if (render_pipeline_owner->owns(p_id)) {
-		RenderPipeline *pipeline = render_pipeline_owner->get_or_null(p_id);
+	} else if (render_pipeline_owner.owns(p_id)) {
+		RenderPipeline *pipeline = render_pipeline_owner.get_or_null(p_id);
 		frames[frame].render_pipelines_to_dispose_of.push_back(*pipeline);
-		render_pipeline_owner->free(p_id);
-	} else if (compute_pipeline_owner->owns(p_id)) {
-		ComputePipeline *pipeline = compute_pipeline_owner->get_or_null(p_id);
+		render_pipeline_owner.free(p_id);
+	} else if (compute_pipeline_owner.owns(p_id)) {
+		ComputePipeline *pipeline = compute_pipeline_owner.get_or_null(p_id);
 		frames[frame].compute_pipelines_to_dispose_of.push_back(*pipeline);
-		compute_pipeline_owner->free(p_id);
+		compute_pipeline_owner.free(p_id);
 	} else {
 #ifdef DEV_ENABLED
 		ERR_PRINT("Attempted to free invalid ID: " + itos(p_id.get_id()) + " " + resource_name);
@@ -6056,20 +6056,20 @@ void RenderingDevice::set_resource_name(RID p_id, const String &p_name) {
 	if (texture_owner->owns(p_id)) {
 		Texture *texture = texture_owner->get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_TEXTURE, texture->driver_id, p_name);
-	} else if (framebuffer_owner->owns(p_id)) {
-		//Framebuffer *framebuffer = framebuffer_owner->get_or_null(p_id);
+	} else if (framebuffer_owner.owns(p_id)) {
+		//Framebuffer *framebuffer = framebuffer_owner.get_or_null(p_id);
 		// Not implemented for now as the relationship between Framebuffer and RenderPass is very complex.
-	} else if (sampler_owner->owns(p_id)) {
-		RDD::SamplerID sampler_driver_id = *sampler_owner->get_or_null(p_id);
+	} else if (sampler_owner.owns(p_id)) {
+		RDD::SamplerID sampler_driver_id = *sampler_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_SAMPLER, sampler_driver_id, p_name);
-	} else if (vertex_buffer_owner->owns(p_id)) {
-		Buffer *vertex_buffer = vertex_buffer_owner->get_or_null(p_id);
+	} else if (vertex_buffer_owner.owns(p_id)) {
+		Buffer *vertex_buffer = vertex_buffer_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_BUFFER, vertex_buffer->driver_id, p_name);
-	} else if (index_buffer_owner->owns(p_id)) {
-		IndexBuffer *index_buffer = index_buffer_owner->get_or_null(p_id);
+	} else if (index_buffer_owner.owns(p_id)) {
+		IndexBuffer *index_buffer = index_buffer_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_BUFFER, index_buffer->driver_id, p_name);
-	} else if (shader_owner->owns(p_id)) {
-		Shader *shader = shader_owner->get_or_null(p_id);
+	} else if (shader_owner.owns(p_id)) {
+		Shader *shader = shader_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_SHADER, shader->driver_id, p_name);
 	} else if (uniform_buffer_owner->owns(p_id)) {
 		Buffer *uniform_buffer = uniform_buffer_owner->get_or_null(p_id);
@@ -6080,14 +6080,14 @@ void RenderingDevice::set_resource_name(RID p_id, const String &p_name) {
 	} else if (storage_buffer_owner->owns(p_id)) {
 		Buffer *storage_buffer = storage_buffer_owner->get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_BUFFER, storage_buffer->driver_id, p_name);
-	} else if (uniform_set_owner->owns(p_id)) {
-		UniformSet *uniform_set = uniform_set_owner->get_or_null(p_id);
+	} else if (uniform_set_owner.owns(p_id)) {
+		UniformSet *uniform_set = uniform_set_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_UNIFORM_SET, uniform_set->driver_id, p_name);
-	} else if (render_pipeline_owner->owns(p_id)) {
-		RenderPipeline *pipeline = render_pipeline_owner->get_or_null(p_id);
+	} else if (render_pipeline_owner.owns(p_id)) {
+		RenderPipeline *pipeline = render_pipeline_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_PIPELINE, pipeline->driver_id, p_name);
-	} else if (compute_pipeline_owner->owns(p_id)) {
-		ComputePipeline *pipeline = compute_pipeline_owner->get_or_null(p_id);
+	} else if (compute_pipeline_owner.owns(p_id)) {
+		ComputePipeline *pipeline = compute_pipeline_owner.get_or_null(p_id);
 		driver->set_object_name(RDD::OBJECT_TYPE_PIPELINE, pipeline->driver_id, p_name);
 	} else {
 		ERR_PRINT("Attempted to name invalid ID: " + itos(p_id.get_id()));
@@ -6840,9 +6840,30 @@ void RenderingDevice::_save_pipeline_cache(void *p_data) {
 }
 
 template <typename T>
-void RenderingDevice::_free_rids(T &p_owner, const char *p_type) {
+void RenderingDevice::_free_rids(T* p_owner, const char *p_type) {
 	List<RID> owned;
 	p_owner->get_owned_list(&owned);
+	if (owned.size()) {
+		if (owned.size() == 1) {
+			WARN_PRINT(vformat("1 RID of type \"%s\" was leaked.", p_type));
+		} else {
+			WARN_PRINT(vformat("%d RIDs of type \"%s\" were leaked.", owned.size(), p_type));
+		}
+		for (const RID &E : owned) {
+#ifdef DEV_ENABLED
+			if (resource_names.has(E)) {
+				print_line(String(" - ") + resource_names[E]);
+			}
+#endif
+			free(E);
+		}
+	}
+}
+
+template <typename T>
+void RenderingDevice::_free_rids(T &p_owner, const char *p_type) {
+	List<RID> owned;
+	p_owner.get_owned_list(&owned);
 	if (owned.size()) {
 		if (owned.size() == 1) {
 			WARN_PRINT(vformat("1 RID of type \"%s\" was leaked.", p_type));
@@ -6898,23 +6919,23 @@ uint64_t RenderingDevice::get_driver_resource(DriverResource p_resource, RID p_r
 			driver_id = tex->driver_id.id;
 		} break;
 		case DRIVER_RESOURCE_SAMPLER: {
-			RDD::SamplerID *sampler_driver_id = sampler_owner->get_or_null(p_rid);
+			RDD::SamplerID *sampler_driver_id = sampler_owner.get_or_null(p_rid);
 			ERR_FAIL_NULL_V(sampler_driver_id, 0);
 
 			driver_id = (*sampler_driver_id).id;
 		} break;
 		case DRIVER_RESOURCE_UNIFORM_SET: {
-			UniformSet *uniform_set = uniform_set_owner->get_or_null(p_rid);
+			UniformSet *uniform_set = uniform_set_owner.get_or_null(p_rid);
 			ERR_FAIL_NULL_V(uniform_set, 0);
 
 			driver_id = uniform_set->driver_id.id;
 		} break;
 		case DRIVER_RESOURCE_BUFFER: {
 			Buffer *buffer = nullptr;
-			if (vertex_buffer_owner->owns(p_rid)) {
-				buffer = vertex_buffer_owner->get_or_null(p_rid);
-			} else if (index_buffer_owner->owns(p_rid)) {
-				buffer = index_buffer_owner->get_or_null(p_rid);
+			if (vertex_buffer_owner.owns(p_rid)) {
+				buffer = vertex_buffer_owner.get_or_null(p_rid);
+			} else if (index_buffer_owner.owns(p_rid)) {
+				buffer = index_buffer_owner.get_or_null(p_rid);
 			} else if (uniform_buffer_owner->owns(p_rid)) {
 				buffer = uniform_buffer_owner->get_or_null(p_rid);
 			} else if (texture_buffer_owner->owns(p_rid)) {
@@ -6927,13 +6948,13 @@ uint64_t RenderingDevice::get_driver_resource(DriverResource p_resource, RID p_r
 			driver_id = buffer->driver_id.id;
 		} break;
 		case DRIVER_RESOURCE_COMPUTE_PIPELINE: {
-			ComputePipeline *compute_pipeline = compute_pipeline_owner->get_or_null(p_rid);
+			ComputePipeline *compute_pipeline = compute_pipeline_owner.get_or_null(p_rid);
 			ERR_FAIL_NULL_V(compute_pipeline, 0);
 
 			driver_id = compute_pipeline->driver_id.id;
 		} break;
 		case DRIVER_RESOURCE_RENDER_PIPELINE: {
-			RenderPipeline *render_pipeline = render_pipeline_owner->get_or_null(p_rid);
+			RenderPipeline *render_pipeline = render_pipeline_owner.get_or_null(p_rid);
 			ERR_FAIL_NULL_V(render_pipeline, 0);
 
 			driver_id = render_pipeline->driver_id.id;
@@ -7216,7 +7237,6 @@ void RenderingDevice::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("texture_get_format", "texture"), &RenderingDevice::_texture_get_format);
 
-	ClassDB::bind_method(D_METHOD("texture_create", "format", "view", "data"), &RenderingDevice::_texture_create, DEFVAL(Array()));
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("texture_get_native_handle", "texture"), &RenderingDevice::texture_get_native_handle);
 #endif
@@ -7296,7 +7316,7 @@ void RenderingDevice::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("borrow_texture_rid"), &RenderingDevice::borrow_texture_rid);
 	ClassDB::bind_method(D_METHOD("borrow_storage_buffer_rid"), &RenderingDevice::borrow_storage_buffer_rid);
-	ClassDB::bind_method(D_METHOD("borrow_uniform_rid"), &RenderingDevice::borrow_uniform_rid());
+	ClassDB::bind_method(D_METHOD("borrow_uniform_rid"), &RenderingDevice::borrow_uniform_rid);
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("draw_list_switch_to_next_pass_split", "splits"), &RenderingDevice::_draw_list_switch_to_next_pass_split);
 #endif
@@ -7934,6 +7954,16 @@ void RenderingDevice::make_current() {
 RenderingDevice::~RenderingDevice() {
 	finalize();
 
+	// We've changed these to pointers so we need to call their destructors
+	delete texture_owner;
+	texture_owner = nullptr;
+	delete texture_buffer_owner;
+	texture_buffer_owner = nullptr;
+	delete storage_buffer_owner;
+	storage_buffer_owner = nullptr;
+	delete uniform_buffer_owner;
+	uniform_buffer_owner = nullptr;
+
 	if (singleton == this) {
 		singleton = nullptr;
 	}
@@ -7943,6 +7973,12 @@ RenderingDevice::RenderingDevice() {
 	if (singleton == nullptr) {
 		singleton = this;
 	}
+
+	// We've changed these to pointers so we need to initialize them
+	texture_owner = new RID_Owner<Texture, true>();
+	texture_buffer_owner = new RID_Owner<Buffer, true>();
+	storage_buffer_owner = new RID_Owner<Buffer, true>();
+	uniform_buffer_owner = new RID_Owner<Buffer, true>();
 
 	render_thread_id = Thread::get_caller_id();
 }

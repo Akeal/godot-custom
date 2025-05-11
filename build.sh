@@ -1,8 +1,9 @@
 #!/bin/bash
 clean="false"
-
+dev="false"
 while (( $# >= 1 )); do 
     case $1 in
+      --dev) dev="true";;
       --clean) clean="true";;
       --proj=*) proj="${1#*=}";;
     *)
@@ -25,6 +26,11 @@ nugetSourcesCmd="mono ${nugetExePath} sources list"
 monoGlueModulesPath="${scriptPath}/modules/mono/glue"
 
 build="scons platform=linuxbsd module_mono_enabled=yes"
+
+if "$dev" == "true"; then
+  echo "DEV BUILD ..."
+  build+=" dev_build=yes debug_symbols=yes use_asan=yes"
+fi
 
 if "$clean" == "true"; then
   echo "Cleaning ..."

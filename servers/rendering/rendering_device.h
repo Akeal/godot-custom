@@ -1505,6 +1505,8 @@ public:
 
 	template <typename T>
 	void _free_rids(T &p_owner, const char *p_type);
+	template <typename T>
+	void _free_rids(T* p_owner, const char *p_type);
 
 #ifdef DEV_ENABLED
 	HashMap<RID, String> resource_names;

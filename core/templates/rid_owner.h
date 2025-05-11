@@ -327,7 +327,7 @@ public:
 			ERR_FAIL_MSG("RID_Owner attempted to borrow RID from itself!");
 		}
 
-		bool other_owned = other_rid_alloc->owns(p_rid, true);
+		bool other_owned = other_rid_alloc->owns(p_rid);
 		if(!other_owned){
 			ERR_FAIL_MSG("Attempted to borrow an RID the does not belong to the provided RID_Owner!");
 		}
@@ -602,10 +602,8 @@ public:
 // RID_Alloc handles the functional tracking of ownership. We will need to know how it does this in order to properly share.
 template <typename T, bool THREAD_SAFE = false>
 class RID_Owner {
-	
-public:
 	RID_Alloc<T, THREAD_SAFE> alloc;
-
+public:
 	_FORCE_INLINE_ RID make_rid() {
 		return alloc.make_rid();
 	}
@@ -630,8 +628,8 @@ public:
 	}
 
 	// Method to allow a different RID_Owner instance access to a given RID
-	_FORCE_INLINE_ void borrow_rid(RID_Owner<T, THREAD_SAFE> p_lending_owner, const RID p_rid) {
-		alloc.borrow_rid(p_lending_owner.alloc, p_rid);
+	_FORCE_INLINE_ void borrow_rid(RID_Owner<T, THREAD_SAFE>* p_lending_owner, const RID p_rid) {
+		alloc.borrow_rid(&(p_lending_owner->alloc), p_rid);
 	}
 
 	// Goal: We need this to return true if an RID is shared with another RID_Owner instance
