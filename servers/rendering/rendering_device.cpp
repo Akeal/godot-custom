@@ -811,18 +811,23 @@ RID RenderingDevice::texture_buffer_create(uint32_t p_size_elements, DataFormat 
 /**** TEXTURE ****/
 /*****************/
 
-RID RenderingDevice::borrow_texture_rid(RenderingDevice* external_rendering_device, RID rid){
-	ERR_FAIL_COND_V_MSG(external_rendering_device->texture_owner->owns(rid), rid, "External rendering device does not own this texture RID! Cannot lend.");
+void RenderingDevice::borrow_texture_rid(RenderingDevice* external_rendering_device, RID rid){
+	//ERR_FAIL_COND_MSG(!external_rendering_device->texture_owner->owns(rid), "External rendering device does not own this texture RID! Cannot lend.");
+	if (unlikely(!external_rendering_device->texture_owner->owns(rid))) {                                                                                                              
+		_err_print_error(FUNCTION_STR, __FILE__, __LINE__, "Condition \"" _STR(!external_rendering_device->texture_owner->owns(rid)) "\" is true.", "External rendering device does not own this texture RID! Cannot lend.");
+		return;                                                                                                                 
+	} else                                                                                                                              
+		((void)0);
 	texture_owner->borrow_rid(external_rendering_device->texture_owner, rid);
 }
 
-RID RenderingDevice::borrow_storage_buffer_rid(RenderingDevice* external_rendering_device, RID rid){
-	ERR_FAIL_COND_V_MSG(external_rendering_device->storage_buffer_owner->owns(rid), rid, "External rendering device does not own this buffer RID! Cannot lend.");
+void RenderingDevice::borrow_storage_buffer_rid(RenderingDevice* external_rendering_device, RID rid){
+	ERR_FAIL_COND_MSG(!external_rendering_device->storage_buffer_owner->owns(rid), "External rendering device does not own this buffer RID! Cannot lend.");
 	storage_buffer_owner->borrow_rid(external_rendering_device->storage_buffer_owner, rid);
 }
 
-RID RenderingDevice::borrow_uniform_rid(RenderingDevice* external_rendering_device, RID rid){
-	ERR_FAIL_COND_V_MSG(external_rendering_device->uniform_buffer_owner->owns(rid), rid, "External rendering device does not own this uniform RID! Cannot lend.");
+void RenderingDevice::borrow_uniform_rid(RenderingDevice* external_rendering_device, RID rid){
+	ERR_FAIL_COND_MSG(!external_rendering_device->uniform_buffer_owner->owns(rid), "External rendering device does not own this uniform RID! Cannot lend.");
 	uniform_buffer_owner->borrow_rid(external_rendering_device->uniform_buffer_owner, rid);
 }
 

@@ -225,9 +225,9 @@ public:
 	Vector<uint8_t> buffer_get_data(RID p_buffer, uint32_t p_offset = 0, uint32_t p_size = 0); // This causes stall, only use to retrieve large buffers for saving.
 	Error buffer_get_data_async(RID p_buffer, const Callable &p_callback, uint32_t p_offset = 0, uint32_t p_size = 0);
 
-	RID borrow_texture_rid(RenderingDevice* external_rendering_device, RID rid);
-	RID borrow_storage_buffer_rid(RenderingDevice* external_rendering_device, RID rid);
-	RID borrow_uniform_rid(RenderingDevice* external_rendering_device, RID rid);
+	void borrow_texture_rid(RenderingDevice* external_rendering_device, RID rid);
+	void borrow_storage_buffer_rid(RenderingDevice* external_rendering_device, RID rid);
+	void borrow_uniform_rid(RenderingDevice* external_rendering_device, RID rid);
 
 	/*****************/
 	/**** TEXTURE ****/

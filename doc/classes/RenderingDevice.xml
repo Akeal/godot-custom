@@ -199,6 +199,30 @@
 				Returns [code]true[/code] if the compute pipeline specified by the [param compute_pipeline] RID is valid, [code]false[/code] otherwise.
 			</description>
 		</method>
+		<method name="borrow_texture_rid">
+			<return type="void" />
+			<param index="0" name="external_rendering_device" type="RenderingDevice" />
+			<param index="1" name="Rid" type="RID" />
+			<description>
+				Borrow a texture RID from the provided external rendering device. This is to allow rendering devices to share resources.
+			</description>
+		</method>
+		<method name="borrow_storage_buffer_rid">
+			<return type="void" />
+			<param index="0" name="external_rendering_device" type="RenderingDevice" />
+			<param index="1" name="Rid" type="RID" />
+			<description>
+				Borrow a storage buffer RID from the provided external rendering device. This is to allow rendering devices to share resources.
+			</description>
+		</method>
+		<method name="borrow_uniform_rid">
+			<return type="void" />
+			<param index="0" name="external_rendering_device" type="RenderingDevice" />
+			<param index="1" name="Rid" type="RID" />
+			<description>
+				Borrow a uniform RID from the provided external rendering device. This is to allow rendering devices to share resources.
+			</description>
+		</method>
 		<method name="create_local_device">
 			<return type="RenderingDevice" />
 			<description>
