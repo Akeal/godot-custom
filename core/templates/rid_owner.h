@@ -278,7 +278,7 @@ public:
 		}
 
 		uint32_t idx = uint32_t(id & 0xFFFFFFFF);
-		if (unlikely(idx >= max_alloc)) {
+		if (unlikely(idx >= owner->max_alloc)) {
 			return nullptr;
 		}
 
